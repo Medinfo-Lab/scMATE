@@ -6,7 +6,7 @@
 [![Shiny](https://img.shields.io/badge/App-Shiny-success)](https://shiny.rstudio.com/)
 [![Shiny](https://img.shields.io/badge/UI-Shiny_Dashboard-success.svg)](https://shiny.rstudio.com/)
 
-**scMATE** is an interactive, Shiny-based bioinformatics software designed for the integration, analysis, and visualization of single-cell multi-omics data. It enables researchers to concurrently evaluate single-cell RNA sequencing (**scRNA-seq**), DNA methylation, and chromatin accessibility (**scNOMe-seq**) data through a graphical user interface, eliminating the need for command-line programming. 
+**scMATE** is an interactive, Shiny-based bioinformatics software designed for the integration, analysis, and visualization of single-cell multi-omics data. It enables researchers to concurrently evaluate single-cell RNA sequencing (**e.g., scRNA-seq**), DNA methylation, and chromatin accessibility (**e.g., scBS-seq, scNOMe-seq, scM&T-seq, scNMT-seq**) data through a graphical user interface, eliminating the need for command-line programming. 
 
 The software utilizes optimized sparse matrix infrastructures and parallel computing to directly process raw sequencing coverage files. It standardizes continuous data distributions across different molecular layers using a composite multi-omic Z-score, facilitating the quantitative identification of coordinately regulated genes.
 
@@ -26,14 +26,14 @@ The software utilizes optimized sparse matrix infrastructures and parallel compu
 
 scMATE consists of three deeply integrated, highly interactive modules:
 
-### 🔬 Module 1: Transcriptome Pipeline (scRNA-seq)
+### 🔬 Module 1: Transcriptome Pipeline
 
 - **Data Import:** Upload raw count matrices (`featureCounts` or `CellRanger` outputs).
 - **QC & Normalization:** Filter low-quality cells/genes, and normalize via `LogNormalize`, `LogCPM`, or `TPM`.
 - **Manifold Learning:** Identify Highly Variable Genes (HVG) and run fast PCA, t-SNE, or UMAP (`uwot`).
 - **DEA:** Compute DEGs using fast sparse-matrix Wilcoxon tests and visualize via interactive Volcano plots.
 
-### 🩸 Module 2: Epigenome Pipeline (scNOMe-seq)
+### 🩸 Module 2: Epigenome Pipeline
 
 - **Matrix Assembly:** Upload Region Annotations (`.csv`) and Single-cell methylation `.cov.gz` files. Automatically strips suffixes and aligns metadata.
 - **Smart Imputation:** Handles extreme sparsity in single-cell epigenomes via Row-Mean or KNN imputation.
@@ -54,11 +54,11 @@ scMATE consists of three deeply integrated, highly interactive modules:
 | **Operating System**   | Windows or Linux                                             |
 | **Software**           | R (version ≥ 4.2.0)                                          |
 | **Hardware (Basic)**   | Minimum 8 GB RAM                                             |
-| **Hardware (Optimal)** | 16 GB+ RAM & Multi-core processors (for datasets > 100 cells & > 20000 Genes) |
+| **Hardware (Optimal)** | 16 GB+ RAM & Multi-core processors (for datasets > 400 cells & > 20000 Genes) |
 
 ## ⚙️ Installation
 
-To run scMATE locally, ensure you have R (>= 4.2.0) installed.
+To run **scMATE** locally, ensure you have R (>= 4.2.0) installed.
 
 ### 1. Clone the repository
 ```bash
@@ -77,7 +77,7 @@ install.packages(c("shiny", "dplyr", "ggplot2", "shinyjs", "Matrix",
                    "plotly", "patchwork", "writexl", "shinycssloaders", 
                    "tidyr", "ggpubr", "GGally", "readxl", "stringr", 
                    "ggrepel", "ggridges", "tictoc", "future", 
-                   "future.apply", "progressr"))
+                   "future.apply", "progressr", "rhdf5"))
 
 # Install Bioconductor packages
 if (!require("BiocManager", quietly = TRUE))

@@ -1294,65 +1294,65 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           ),
+          # tabPanel(
+          #   title = "3. Enhancer-Promoter Interactions",
+          #   value = "tab_enhancer_promoter_interact",
+          #   br(),
+          #   fluidRow(
+          #     # 左侧：参数与数据上传面板
+          #     column(width = 3,
+          #            box(
+          #              title = span(icon("sliders-h"), " E-P Configuration"),
+          #              status = "primary", solidHeader = TRUE, width = NULL,
+          #              h5(icon("upload"), " Upload Matrices (.csv)", style = "color: #3C5488; font-weight: bold;"),
+          #              fileInput("ep_enh_cpg", "1. Enhancer CpG Matrix:", accept = ".csv"),
+          #              fileInput("ep_enh_gpc", "2. Enhancer GpC Matrix:", accept = ".csv"),
+          #              fileInput("ep_pro_cpg", "3. Promoter CpG Matrix:", accept = ".csv"),
+          #              fileInput("ep_pro_gpc", "4. Promoter GpC Matrix:", accept = ".csv"),
+          #              hr(),
+          #              h5(icon("list"), " Annotation & Params", style = "color: #E64B35; font-weight: bold;"),
+          #              fileInput("ep_pro_anno", "Promoter Annotation (.csv):", accept = ".csv"),
+          #              numericInput("ep_max_dist", "Max Interaction Window (bp):", value = 50000, step = 10000),
+          #              actionButton("btn_run_ep", " Run E-P Analysis", icon = icon("project-diagram"),
+          #                           class = "btn-info btn-lg", style = "width: 100%; font-weight: bold; margin-top: 10px;")
+          #            )
+          #     ),
+          #     # 右侧：可视化与结果面板
+          #     column(width = 9,
+          #            box(
+          #              title = "Interaction Landscape & Results", status = "success", solidHeader = FALSE, width = NULL,
+          #              tabsetPanel(
+          #                # 子标签页 3：数据表
+          #                tabPanel("Data Table", icon = icon("table"),
+          #                         br(),
+          #                         div(style = "text-align: right; margin-bottom: 10px;",
+          #                             downloadButton("dl_ep_table", "Export Interactions", class = "btn-default btn-sm")),
+          #                         DT::DTOutput("table_ep_res")
+          #                ),
+          #                # # 子标签页 2：全局散点图
+          #                # tabPanel("Global Correlation", icon = icon("project-diagram"),
+          #                #          br(),
+          #                #          div(style = "text-align: right; margin-bottom: 10px;",
+          #                #              downloadButton("dl_ep_scatter", "Download PDF", class = "btn-default btn-sm")),
+          #                #          fluidRow(column(10, offset = 1, shinycssloaders::withSpinner(plotOutput("plot_ep_scatter", height = "450px"))))
+          #                # ),
+          #                # 子标签页 1：局部基因拓扑弧线图
+          #                tabPanel("Locus Arc Plot", icon = icon("bezier-curve"),
+          #                         br(),
+          #                         fluidRow(
+          #                           column(4, selectizeInput("ep_target_gene", "Select Target Gene:", choices = NULL, width = "100%")),
+          #                           column(8, div(style = "text-align: right; margin-top: 25px;",
+          #                                         downloadButton("dl_ep_arc", "Download PDF", class = "btn-default btn-sm")))
+          #                         ),
+          #                         shinycssloaders::withSpinner(plotOutput("plot_ep_arc", height = "650px"))
+          #                )
+          #              )
+          #            )
+          #     )
+          #   )
+          # ),
           tabPanel(
-            title = "3. Enhancer-Promoter Interactions",
-            value = "tab_enhancer_promoter_interact",
-            br(),
-            fluidRow(
-              # 左侧：参数与数据上传面板
-              column(width = 3,
-                     box(
-                       title = span(icon("sliders-h"), " E-P Configuration"),
-                       status = "primary", solidHeader = TRUE, width = NULL,
-                       h5(icon("upload"), " Upload Matrices (.csv)", style = "color: #3C5488; font-weight: bold;"),
-                       fileInput("ep_enh_cpg", "1. Enhancer CpG Matrix:", accept = ".csv"),
-                       fileInput("ep_enh_gpc", "2. Enhancer GpC Matrix:", accept = ".csv"),
-                       fileInput("ep_pro_cpg", "3. Promoter CpG Matrix:", accept = ".csv"),
-                       fileInput("ep_pro_gpc", "4. Promoter GpC Matrix:", accept = ".csv"),
-                       hr(),
-                       h5(icon("list"), " Annotation & Params", style = "color: #E64B35; font-weight: bold;"),
-                       fileInput("ep_pro_anno", "Promoter Annotation (.csv):", accept = ".csv"),
-                       numericInput("ep_max_dist", "Max Interaction Window (bp):", value = 50000, step = 10000),
-                       actionButton("btn_run_ep", " Run E-P Analysis", icon = icon("project-diagram"),
-                                    class = "btn-info btn-lg", style = "width: 100%; font-weight: bold; margin-top: 10px;")
-                     )
-              ),
-              # 右侧：可视化与结果面板
-              column(width = 9,
-                     box(
-                       title = "Interaction Landscape & Results", status = "success", solidHeader = FALSE, width = NULL,
-                       tabsetPanel(
-                         # 子标签页 3：数据表
-                         tabPanel("Data Table", icon = icon("table"),
-                                  br(),
-                                  div(style = "text-align: right; margin-bottom: 10px;",
-                                      downloadButton("dl_ep_table", "Export Interactions", class = "btn-default btn-sm")),
-                                  DT::DTOutput("table_ep_res")
-                         ),
-                         # # 子标签页 2：全局散点图
-                         # tabPanel("Global Correlation", icon = icon("project-diagram"),
-                         #          br(),
-                         #          div(style = "text-align: right; margin-bottom: 10px;",
-                         #              downloadButton("dl_ep_scatter", "Download PDF", class = "btn-default btn-sm")),
-                         #          fluidRow(column(10, offset = 1, shinycssloaders::withSpinner(plotOutput("plot_ep_scatter", height = "450px"))))
-                         # ),
-                         # 子标签页 1：局部基因拓扑弧线图
-                         tabPanel("Locus Arc Plot", icon = icon("bezier-curve"),
-                                  br(),
-                                  fluidRow(
-                                    column(4, selectizeInput("ep_target_gene", "Select Target Gene:", choices = NULL, width = "100%")),
-                                    column(8, div(style = "text-align: right; margin-top: 25px;",
-                                                  downloadButton("dl_ep_arc", "Download PDF", class = "btn-default btn-sm")))
-                                  ),
-                                  shinycssloaders::withSpinner(plotOutput("plot_ep_arc", height = "650px"))
-                         )
-                       )
-                     )
-              )
-            )
-          ),
-          tabPanel(
-            title = "4. Enrichment Analysis",
+            title = "3. Enrichment Analysis",
             value = "tab_integ_enrich",
             br(),
             fluidRow(
