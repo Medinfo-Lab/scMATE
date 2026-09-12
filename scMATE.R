@@ -1102,6 +1102,16 @@ ui <- shinydashboardPlus::dashboardPage(
                          div(class = "well", style = "background-color: #fff; border-top: 3px solid #E64B35; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);",
                              h4(icon("dna"), " RNA (Transcriptome)", style = "color: #E64B35; margin-top: 0; font-weight: bold;"),
                              fileInput("integ_rna_rds", "RNA Object (.rds):", accept = ".rds"),
+                             radioButtons(
+                               "rna_matrix_source",
+                               "RNA Matrix Source:",
+                               choices = c(
+                                 "Use pre-normalized assays$RNA$data" = "data",
+                                 "Use raw/filtered counts and normalize per cell" = "counts"
+                               ),
+                               selected = "data",
+                               inline = FALSE
+                             ),
                              uiOutput("ui_rna_rds_group_col"),
                              verbatimTextOutput("txt_rna_avail_groups", placeholder = TRUE),
                              hr(style = "border-top: 1px dashed #ccc; margin-top: 10px; margin-bottom: 10px;"),
@@ -1493,12 +1503,7 @@ ui <- shinydashboardPlus::dashboardPage(
                        - **Chromosome Topology:** Select a chromosome to visualize how RNA expression, CpG methylation, and GpC accessibility co-vary across physical Megabase positions.
                        - **States & Drivers:** Calculates regulatory states (e.g., *Poised*, *Fully Activated*) and a Joint Z-score to rank master transcriptional driver genes.
 
-                       #### Step 3: Enhancer-Promoter Interactions
-                       1. Upload Enhancer and Promoter specific matrices.
-                       2. Set the maximum interaction window (e.g., `50,000 bp`).
-                       3. View the physical looping via the **Locus Arc Plot**.
-
-                       #### Step 4: Enrichment Analysis
+                       #### Step 3: Enrichment Analysis
                        Input your discovered master driver genes into the GO/KEGG pathway engine to uncover the underlying biological mechanisms.
                        ")
                      )
@@ -5246,6 +5251,61 @@ server <- function(input, output, session) {
     }
   })
 
+  prepare_rna_matrix <- function(rna_assay, source = "data", scale_factor = 1e4) {
+    if (source == "data") {
+      expr_mat <- rna_assay$data
+      if (is.null(expr_mat)) {
+        stop(
+          "RNA normalized data is missing: assays$RNA$data was not found. ",
+          "Select the raw/filtered counts option instead."
+        )
+      }
+      if (is.null(rownames(expr_mat)) || is.null(colnames(expr_mat))) {
+        stop("RNA data matrix must have gene row names and cell column names.")
+      }
+      # data slot should be non-negative normalized expression,
+      # not assays$RNA$scale.data
+      if (any(expr_mat < 0, na.rm = TRUE)) {
+        stop(
+          "assays$RNA$data contains negative values. ",
+          "It may be scale.data rather than normalized expression."
+        )
+      }
+      return(list(
+        mat = expr_mat,
+        label = "assays$RNA$data (pre-normalized)"
+      ))
+    }
+    counts <- rna_assay$counts
+    if (is.null(counts)) {
+      counts <- rna_assay$filter_counts
+    }
+    if (is.null(counts)) {
+      stop("Neither assays$RNA$counts nor filter_counts was found.")
+    }
+    if (is.data.frame(counts)) {
+      counts <- as.matrix(counts)
+    }
+    if (is.null(rownames(counts)) || is.null(colnames(counts))) {
+      stop("RNA count matrix must have gene row names and cell column names.")
+    }
+    if (any(counts < 0, na.rm = TRUE)) {
+      stop("RNA count matrix contains negative values.")
+    }
+    library_size <- Matrix::colSums(counts)
+    if (any(!is.finite(library_size) | library_size <= 0)) {
+      stop("RNA matrix contains cells with invalid or zero library size.")
+    }
+    # Normalize each cell to 10,000 counts, then log1p transform
+    normalized_mat <- counts %*%
+      Matrix::Diagonal(x = scale_factor / library_size)
+    normalized_mat <- log1p(normalized_mat)
+    list(
+      mat = normalized_mat,
+      label = "counts -> library-size normalization -> log1p"
+    )
+  }
+
   # 核心整合逻辑 (支持4种动态模式)
   observeEvent(input$integ_btn_run, {
     tic("Integration multi-omics total time:")
@@ -5262,23 +5322,23 @@ server <- function(input, output, session) {
       path_rna_diff <- "data/Markers_E4.5_vs_Rest_2026-03-30.csv"
     } else {
       req(input$integ_region_file)
-      path_region   <- input$integ_region_file$datapath
+      path_region <- input$integ_region_file$datapath
       # 根据模式检查依赖文件
-      path_cpg_mat  <- NULL
-      path_cpg_dmr  <- NULL
+      path_cpg_mat <- NULL
+      path_cpg_dmr <- NULL
       if (mode %in% c("tri", "rna_cpg", "cpg_gpc")) {
         req(input$integ_cpg_mat) # 只强制要求 Matrix
         path_cpg_mat  <- input$integ_cpg_mat$datapath
         # 如果上传了 DMR 则获取路径，否则设为 NULL
         path_cpg_dmr  <- if (!is.null(input$integ_cpg_dmr)) input$integ_cpg_dmr$datapath else NULL
       }
-      path_gpc_mat  <- NULL
-      path_gpc_dmr  <- NULL
+      path_gpc_mat <- NULL
+      path_gpc_dmr <- NULL
       if (mode %in% c("tri", "cpg_gpc", "rna_gpc")) {
         req(input$integ_gpc_mat) # 只强制要求 Matrix
         path_gpc_mat  <- input$integ_gpc_mat$datapath
         # 如果上传了 DAR 则获取路径，否则设为 NULL
-        path_gpc_dmr  <- if (!is.null(input$integ_gpc_dmr)) input$integ_gpc_dmr$datapath else NULL
+        path_gpc_dmr <- if (!is.null(input$integ_gpc_dmr)) input$integ_gpc_dmr$datapath else NULL
       }
       # 修复1：加上 "rna_gpc"
       if (mode %in% c("tri", "rna_cpg", "rna_gpc") && input$rna_gene_mode == "diff") {
@@ -5330,7 +5390,15 @@ server <- function(input, output, session) {
         }
         target_cells <- rownames(meta_df)[which(meta_df[[group_col_rna]] == target_group)]
         rna_assay <- custom_obj$assays$RNA
-        expr_mat <- if(!is.null(rna_assay$data)) rna_assay$data else if(!is.null(rna_assay$filter_counts)) rna_assay$filter_counts else rna_assay$counts
+        rna_prepared <- prepare_rna_matrix(
+          rna_assay = rna_assay,
+          source = if (is.null(input$rna_matrix_source)) {
+            "data"
+          } else {
+            input$rna_matrix_source
+          }
+        )
+        expr_mat <- rna_prepared$mat
         valid_cells <- intersect(target_cells, colnames(expr_mat))
         if(length(valid_cells) == 0) stop("RNA Error: Sample IDs in metadata do not match RNA matrix column names.")
         valid_rna_genes <- rownames(expr_mat)
@@ -5947,19 +6015,35 @@ server <- function(input, output, session) {
       calc_robust_z <- function(x) {
         med_val <- median(x, na.rm = TRUE)
         mad_val <- mad(x, na.rm = TRUE)
-        # 防止 MAD 为 0 (例如在高度同质的区域) 导致除以 0 的错误，退回使用 SD
-        if(mad_val == 0) mad_val <- sd(x, na.rm = TRUE) + 1e-6
-
+        if (!is.finite(mad_val) || mad_val < 1e-8) {
+          sd_val <- sd(x, na.rm = TRUE)
+          if (!is.finite(sd_val) || sd_val < 1e-8) {
+            return(rep(0, length(x)))
+          }
+          mad_val <- sd_val
+        }
         z <- (x - med_val) / mad_val
         # 极值截断处理 (Clipping)
-        z[z > 3] <- 3
-        z[z < -3] <- -3
+        z <- pmax(pmin(z, 3), -3)
         return(z)
       }
       # 计算 Z-score
       if(has_rna) {
         # RNA 必须先做 log2(x+1) 转换来消除长尾效应，再求稳健 Z-score
-        df_clean$Z_RNA <- calc_robust_z(log2(df_clean$RNA_Exp + 1))
+        # df_clean$Z_RNA <- calc_robust_z(log2(df_clean$RNA_Exp + 1))
+        rna_values <- suppressWarnings(as.numeric(df_clean$RNA_Exp))
+        if (any(!is.finite(rna_values))) {
+          stop("RNA_Exp contains non-numeric or infinite values.")
+        }
+        if (any(rna_values < 0)) {
+          stop(
+            "RNA_Exp contains negative values. ",
+            "Please use normalized expression, not scale.data."
+          )
+        }
+        # RNA_Exp has already been normalized/log-transformed in Step 1.
+        # Do not apply log2() again here.
+        df_clean$Z_RNA <- calc_robust_z(rna_values)
       }
       if(has_cpg) {
         # Level 数据 (0-1) 直接求稳健 Z-score
@@ -5973,11 +6057,11 @@ server <- function(input, output, session) {
         # 经过同尺度 Robust 标准化后，可以直接加减
         df_clean$MultiOmic_Score <- df_clean$Z_RNA + df_clean$Z_GpC - df_clean$Z_CpG
         heat_cols <- c("Z_RNA", "Z_GpC", "Z_CpG")
-        heat_names <- c("RNA (Log2)", "GpC (Acc)", "CpG (Meth)")
+        heat_names <- c("RNA (Normalized)", "GpC (Acc)", "CpG (Meth)")
       } else if (has_rna && has_cpg) {
         df_clean$MultiOmic_Score <- df_clean$Z_RNA - df_clean$Z_CpG
         heat_cols <- c("Z_RNA", "Z_CpG")
-        heat_names <- c("RNA (Log2)", "CpG (Meth)")
+        heat_names <- c("RNA (Normalized)", "CpG (Meth)")
       } else if (has_cpg && has_gpc) {
         df_clean$MultiOmic_Score <- df_clean$Z_GpC - df_clean$Z_CpG
         heat_cols <- c("Z_GpC", "Z_CpG")
@@ -5985,7 +6069,7 @@ server <- function(input, output, session) {
       } else if (has_rna && has_gpc) {
         df_clean$MultiOmic_Score <- df_clean$Z_RNA + df_clean$Z_GpC
         heat_cols <- c("Z_RNA", "Z_GpC")
-        heat_names <- c("RNA (Log2)", "GpC (Acc)")
+        heat_names <- c("RNA (Normalized)", "GpC (Acc)")
       }
       # 筛选 Top N Driver Genes
       top_genes <- df_clean %>%
