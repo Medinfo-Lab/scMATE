@@ -447,14 +447,22 @@ ui <- shinydashboardPlus::dashboardPage(
         box(
           title = "User Guide: Transcriptomics Module", width = 12, collapsible = TRUE, collapsed = FALSE, class = "guide-box",
           tags$ul(
-            tags$li(strong("Create Object & Quality Control:"),
-                    " Automatically extract Highly Variable Genes (HVGs) to define the optimal feature space. Execute high-performance manifold learning—including PCA, t-SNE, and UMAP—coupled with robust community detection algorithms to dissect cellular heterogeneity and map topological structures."),
-            tags$li(strong("Dimension Reduction & Cluster Analysis:"),
-                    " Automatically extract Highly Variable Genes (HVGs) to define the optimal feature space. Execute high-performance manifold learning—including PCA, t-SNE, and UMAP—coupled with robust community detection algorithms to dissect cellular heterogeneity and map topological structures."),
-            tags$li(strong("Differential Expression Analysis (DEA):"),
-                    " Leverage a highly optimized, sparse-matrix-accelerated Wilcoxon rank-sum framework to execute rapid statistical testing. Efficiently profile global or cluster-specific transcriptomic signatures, visualized instantly through interactive and fully annotated Volcano plots."),
-            tags$li(strong("Pseudotime Analysis:"),
-                    " Elucidate developmental trajectories and transitional cellular states. Implement sophisticated modeling techniques—selecting 'Cluster-based' routing for macroscopic state progressions or 'Graph-based' topologies for high-resolution continuous gradients—to accurately infer developmental pseudotime.")
+            tags$li(
+              strong("Create Object & Quality Control:"),
+              " Automatically extract Highly Variable Genes (HVGs) to define the optimal feature space. Execute high-performance manifold learning—including PCA, t-SNE, and UMAP—coupled with robust community detection algorithms to dissect cellular heterogeneity and map topological structures."
+            ),
+            tags$li(
+              strong("Dimension Reduction & Cluster Analysis:"),
+              " Automatically extract Highly Variable Genes (HVGs) to define the optimal feature space. Execute high-performance manifold learning—including PCA, t-SNE, and UMAP—coupled with robust community detection algorithms to dissect cellular heterogeneity and map topological structures."
+            ),
+            tags$li(
+              strong("Differential Expression Analysis (DEA):"),
+              " Perform either exploratory cell-level Wilcoxon marker screening or replicate-aware pseudobulk differential expression. In pseudobulk mode, raw counts are aggregated by biological sample and group, followed by edgeR quasi-likelihood negative binomial modeling with FDR correction. Results are visualized through interactive tables and fully annotated volcano plots."
+            ),
+            tags$li(
+              strong("Pseudotime Analysis:"),
+              " Elucidate developmental trajectories and transitional cellular states. Implement sophisticated modeling techniques—selecting 'Cluster-based' routing for macroscopic state progressions or 'Graph-based' topologies for high-resolution continuous gradients—to accurately infer developmental pseudotime."
+            )
           )
         ),
         fluidRow(
@@ -465,6 +473,7 @@ ui <- shinydashboardPlus::dashboardPage(
         tabsetPanel(
           id = "rna_analysis_tabs",
           type = "tabs",
+          ## Transcriptome Create Object & QC ----
           tabPanel(
             title = "1. Create Object & QC",
             value = "tab_rna_preprocess",
@@ -565,6 +574,7 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           ),
+          ## Transcriptome Dim Reduction Clustering ----
           tabPanel(
             title = "2. Dimension Reduction & Clustering",
             value = "tab_rna_dimred",
@@ -628,6 +638,7 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           ),
+          ## Transcriptome Differential Analysis ----
           tabPanel(
             title = "3. Differential Gene Analysis",
             value = "tab_rna_dea",
@@ -645,6 +656,45 @@ ui <- shinydashboardPlus::dashboardPage(
                        uiOutput("dea_group_col_ui"),
                        radioButtons("dea_mode", "Comparison Mode:", choices = c("One vs Rest (Find Markers)" = "one_vs_rest", "One vs One (Targeted)" = "one_vs_one")),
                        uiOutput("dea_comparison_ui"),
+                       hr(style = "border-top: 1px dashed #d2d6de;"),
+                       radioButtons(
+                         "dea_test_method",
+                         "Statistical Framework:",
+                         choices = c(
+                           "Cell-level Wilcoxon (exploratory markers)" = "wilcox",
+                           "Pseudobulk edgeR QL-F test (replicate-aware)" = "pseudobulk"
+                         ),
+                         selected = "wilcox"
+                       ),
+                       conditionalPanel(
+                         condition = "input.dea_test_method == 'pseudobulk'",
+                         div(
+                           style = "padding: 10px; background-color: #f9f9f9; border-radius: 5px; border: 1px solid #e3e3e3;",
+                           uiOutput("dea_sample_col_ui"),
+                           numericInput(
+                             "pb_min_cells",
+                             "Min cells per pseudobulk profile:",
+                             value = 10,
+                             min = 1,
+                             step = 1
+                           ),
+                           numericInput(
+                             "pb_min_reps",
+                             "Min biological replicates per group:",
+                             value = 2,
+                             min = 2,
+                             step = 1
+                           ),
+                           checkboxInput(
+                             "pb_auto_block",
+                             "Use sample blocking when paired profiles are available",
+                             value = TRUE
+                           ),
+                           helpText(
+                             "Pseudobulk DEA requires a true biological replicate/sample column, such as donor, patient, embryo, mouse, or sample ID. Do not select cell barcode as sample ID."
+                           )
+                         )
+                       ),
                        hr(style = "border-top: 1px dashed #d2d6de;"),
                        splitLayout(
                          numericInput("dea_min_pct", "Min Pct:", 0.2, step = 0.05, min = 0, max = 1),
@@ -680,6 +730,7 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           ),
+          ## Transcriptome Pseudotime Analysis ----
           tabPanel(
             title = "4. Pseudotime Analysis",
             value = "tab_rna_Pseudo",
@@ -750,6 +801,7 @@ ui <- shinydashboardPlus::dashboardPage(
         tabsetPanel(
           id = "epi_main_tabs",
           type = "tabs",
+          ## Epigenome Translation ----
           tabPanel(
             title = "1. Matrix Assembly & QC",
             value = "tab_epi_assembly",
@@ -826,6 +878,7 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           ),
+          ## Epigenome Dim Reduction ----
           tabPanel(
             title = "2. Dimension Reduction",
             value = "tab_epi_dimred",
@@ -889,6 +942,7 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           ),
+          ## Epigenome Data DEG ----
           tabPanel(
             title = "3. Differential Region Analysis",
             value = "tab_epi_diff",
@@ -944,77 +998,6 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           )
-          # tabPanel(
-          #   title = "4. ATAC Format Converter",
-          #   value = "tab_epi_atac_convert",
-          #   br(),
-          #   fluidRow(
-          #     # 左侧控制面板：上传和说明
-          #     column(width = 3,
-          #            box(
-          #              title = tagList(icon("upload"), " scATAC-seq Data Input"),
-          #              status = "primary", solidHeader = TRUE, width = NULL,
-          #              # 数据格式说明
-          #              tags$div(
-          #                style = "background-color: #f9f9f9; padding: 15px; border-left: 4px solid #3c8dbc; margin-bottom: 15px;",
-          #                tags$h5(tags$b("1. Upload ATAC Matrix (Required):")),
-          #                tags$p("Row = Peak ID (chr:start-end), Columns = Cells, Values = Counts"),
-          #                tags$h5(tags$b("2. Target Regions BED (Optional):")),
-          #                tags$p("First 3 columns must be: ", tags$code("chr"), ", ", tags$code("start"), ", ", tags$code("end"),". Intersects ATAC peaks to your custom regions.")
-          #              ),
-          #              # 1. 上传 ATAC 矩阵
-          #              fileInput("atac_matrix_file", "1. Upload Peak Matrix (.csv)",
-          #                        accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
-          #              # 2. 上传 目标染色体区域 (BED/CSV)
-          #              fileInput("target_region_file", "2. Upload Target Regions (Optional, .bed/.csv)",
-          #                        accept = c(".bed", ".csv", ".txt")),
-          #              tags$div(style = "display: flex; gap: 10px;",
-          #                       actionButton("btn_convert_atac", "Convert to scMATE",
-          #                                    icon = icon("play-circle"),
-          #                                    class = "btn-info",
-          #                                    style = "flex: 2; font-weight: bold; font-size: 15px;"),
-          #
-          #                       actionButton("btn_reset_atac", "Reset",
-          #                                    icon = icon("redo"),
-          #                                    class = "btn-warning",
-          #                                    style = "flex: 1; font-weight: bold; font-size: 15px;")
-          #              ),
-          #              br(), hr(),
-          #              # 下载按钮 1 (原始 Peaks)
-          #              shinyjs::hidden(
-          #                downloadButton("download_atac_covs", "Download Original Peaks (.cov ZIP)",
-          #                               class = "btn-success btn-block", style = "font-weight: bold; margin-bottom: 10px;")
-          #              )
-          #            )
-          #     ),
-          #     # 右侧展示面板：使用 TabsetPanel 区分两个表的预览table
-          #     column(width = 9,
-          #            box(
-          #              title = span(icon("table"), " Converted Data Preview"), status = "success", width = NULL,
-          #              # title = tagList(icon("table"), " Converted Data Preview"),
-          #              # status = "info", solidHeader = TRUE, width = NULL,
-          #              tabsetPanel(
-          #                tabPanel("Original ATAC Peaks",
-          #                         br(),
-          #                         tags$div(
-          #                           style = "display: flex; justify-content: flex-end; margin-bottom: 10px;",
-          #                           shinyjs::hidden(downloadButton("download_preview_orig", "Download Table (.csv)", class = "btn-default btn-sm"))
-          #                         ),
-          #                         # helpText("Previewing signals based on the original ATAC Matrix regions:"),
-          #                         DTOutput("atac_preview_table")),
-          #                tabPanel("Target Mapped Regions",
-          #                         br(),
-          #                         tags$div(
-          #                           style = "display: flex; justify-content: flex-end; margin-bottom: 10px;",
-          #                           shinyjs::hidden(downloadButton("download_preview_mapped", "Download Table (.csv)", class = "btn-default btn-sm"))
-          #                         ),
-          #                         # helpText("Previewing signals intersected and mapped to your uploaded Target Regions. (Shows Max ATAC signal within target):"),
-          #                         DTOutput("atac_mapped_preview_table"))
-          #              )
-          #            )
-          #     )
-          #   )
-          # )
         )
       ),
       # Tab 4: Integration Analysis ----
@@ -1043,6 +1026,7 @@ ui <- shinydashboardPlus::dashboardPage(
         tabsetPanel(
           id = "intergration_main_tabs",
           type = "tabs",
+          ## Integration Analysis Server Logic ----
           tabPanel(
             title = "1. Data Integration",
             value = "tab_intergration_matrix",
@@ -1148,7 +1132,9 @@ ui <- shinydashboardPlus::dashboardPage(
                                cellWidths = c("50%", "50%")
                              ),
                              uiOutput("ui_cpg_sheet_select"),
-                             fluidRow(column(6, uiOutput("ui_cpg_id_col")), column(6, uiOutput("ui_cpg_group_col"))),
+                             fluidRow(column(6,
+                                             uiOutput("ui_cpg_id_col")),
+                                      column(6, uiOutput("ui_cpg_group_col"))),
                              hr(style = "border-top: 1px dashed #ccc; margin-top: 10px; margin-bottom: 10px;"),
                              radioButtons("cpg_filter_mode", "DMR Filtering:",
                                           choices = c("Use All in File" = "all", "Filter by Thresholds" = "filter"),
@@ -1246,6 +1232,7 @@ ui <- shinydashboardPlus::dashboardPage(
               )
             )
           ),
+          ## Multi-omics Data Analysis ----
           tabPanel(
             title = "2. Multi-omics Data Analysis",
             value = "tab_multi_omics_analysis",
@@ -1264,10 +1251,121 @@ ui <- shinydashboardPlus::dashboardPage(
                        uiOutput("ui_topo_gene_select"), # 【新增】基因选择框
                        actionButton("btn_run_topo", " Map Topology", icon = icon("project-diagram"), class = "btn-info btn-block", style = "font-weight: bold; margin-bottom: 15px;"),
                        hr(),
-                       h4(icon("fire"), " States & Drivers", style = "color: #E64B35; font-weight: bold;"),
-                       p("Calculate epigenetic states and joint Z-scores.", style = "color: #888; font-size: 12px;"),
-                       numericInput("num_top_genes", "Top N Driver Genes:", value = 40, min = 10, max = 200, step = 10),
-                       actionButton("btn_run_states_heatmap", " Run States & Heatmap", icon = icon("chart-pie"), class = "btn-info btn-block", style = "font-weight: bold;")
+                       h4(
+                         icon("fire"),
+                         " Regulatory States & Candidate Ranking",
+                         style = "color: #E64B35; font-weight: bold;"
+                       ),
+                       p(
+                         "First assign regulatory states using robust Z-score projections, then rank candidate genes/loci using DMCS.",
+                         style = "color: #888; font-size: 12px;"
+                       ),
+                       h5(
+                         icon("sliders-h"),
+                         " Regulatory State Parameters",
+                         style = "color: #3C5488; font-weight: bold;"
+                       ),
+                       fluidRow(
+                         column(
+                           width = 12,
+                           sliderInput(
+                             inputId = "state_min_cos",
+                             label = "Minimum cosine",
+                             min = 0.30,
+                             max = 0.95,
+                             value = 0.60,
+                             step = 0.05
+                           )
+                         ),
+                         column(
+                           width = 12,
+                           sliderInput(
+                             inputId = "state_min_norm",
+                             label = "Minimum Z magnitude",
+                             min = 0.00,
+                             max = 3.00,
+                             value = 0.80,
+                             step = 0.10
+                           )
+                         ),
+                         column(
+                           width = 12,
+                           sliderInput(
+                             inputId = "state_label_cut",
+                             label = "Minimum label fraction",
+                             min = 0.00,
+                             max = 0.20,
+                             value = 0.03,
+                             step = 0.01
+                           )
+                         )
+                       ),
+                       actionButton(
+                         "btn_run_states",
+                         " Generate Regulatory States Pie",
+                         icon = icon("chart-pie"),
+                         class = "btn-info btn-block",
+                         style = "font-weight: bold; margin-bottom: 15px;"
+                       ),
+
+                       hr(),
+                       h5(
+                         icon("th"),
+                         " Candidate Ranking & Heatmap",
+                         style = "color: #E64B35; font-weight: bold;"
+                       ),
+                       selectInput(
+                         "multi_score_signature",
+                         "Ranking Signature:",
+                         choices = c(
+                           "Canonical active: RNA↑ + GpC↑ + CpG↓" = "Canonical_active",
+                           "Canonical silent: RNA↓ + GpC↓ + CpG↑" = "Canonical_silent",
+                           "Poised/open but low RNA: RNA↓ + GpC↑ + CpG↓" = "Poised_open",
+                           "Expressed with methylation: RNA↑ + CpG↑" = "Expressed_methylated",
+                           "Accessible with methylation: GpC↑ + CpG↑" = "Accessible_methylated",
+                           "RNA-high but closed/uncoupled: RNA↑ + GpC↓" = "RNA_uncoupled",
+                           "Auto: assign best matching signature per gene" = "Auto_best"
+                         ),
+                         selected = "Canonical_active"
+                       ),
+                       selectInput(
+                         "multi_rank_metric",
+                         "Ranking Metric:",
+                         choices = c(
+                           "Selected signature DMCS" = "DMCS",
+                           "Non-canonical residual" = "Residual",
+                           "Overall multi-omic magnitude" = "Magnitude"
+                         ),
+                         selected = "DMCS"
+                       ),
+                       checkboxInput(
+                         "multi_rank_unclipped",
+                         "Use unclipped robust Z for ranking; clip only for heatmap",
+                         value = TRUE
+                       ),
+                       numericInput(
+                         "dmcs_perm_n",
+                         "Empirical permutations for DMCS FDR, 0 = skip:",
+                         value = 0,
+                         min = 0,
+                         max = 2000,
+                         step = 100
+                       ),
+                       numericInput(
+                         "num_top_genes",
+                         "Top N ranked Genes:",
+                         value = 40,
+                         min = 10,
+                         max = 200,
+                         step = 10
+                       ),
+                       actionButton(
+                         "btn_run_heatmap",
+                         " Run Candidate Ranking Heatmap",
+                         icon = icon("th"),
+                         class = "btn-info btn-block",
+                         style = "font-weight: bold;"
+                       )
                      )
               ),
               column(width = 9,
@@ -1283,7 +1381,7 @@ ui <- shinydashboardPlus::dashboardPage(
                                   ),
                                   shinycssloaders::withSpinner(plotOutput("plot_multi_topo", height = "600px"))
                          ),
-                         tabPanel("Driver Genes (Heatmap)", value = "tab_heatmap", icon = icon("th"),
+                         tabPanel("Ranked Candidates Genes (Heatmap)", value = "tab_heatmap", icon = icon("th"),
                                   br(),
                                   div(style = "text-align: right; margin-bottom: 10px;",
                                       downloadButton("dl_heatmap_data", " Download Data", class = "btn-default btn-sm"),
@@ -1297,13 +1395,15 @@ ui <- shinydashboardPlus::dashboardPage(
                                       downloadButton("dl_states_data", " Download Data", class = "btn-default btn-sm"),
                                       downloadButton("dl_states_pdf", " Download PDF", class = "btn-default btn-sm")
                                   ),
-                                  fluidRow(column(8, offset = 2, shinycssloaders::withSpinner(plotOutput("plot_multi_states", height = "500px"))))
+                                  fluidRow(column(8, offset = 2,
+                                                  shinycssloaders::withSpinner(plotOutput("plot_multi_states", height = "500px"))))
                          )
                        )
                      )
               )
             )
           ),
+          ## Enrichment Analysis Logic ----
           tabPanel(
             title = "3. Enrichment Analysis",
             value = "tab_integ_enrich",
@@ -1486,6 +1586,7 @@ server <- function(input, output, session) {
   library(FNN)
   library(tictoc)
   library(rhdf5)
+  library(edgeR)
 
 
   observeEvent(input$goto_tab, {
@@ -1531,6 +1632,7 @@ server <- function(input, output, session) {
     Multi_values$raw_data = NULL
     Multi_values$topo_plot = NULL
     Multi_values$states_plot = NULL
+    Multi_values$states_gene_data = NULL
     Multi_values$heatmap_plot = NULL
     Multi_values$topo_data = NULL
     Multi_values$states_data = NULL
@@ -1548,7 +1650,7 @@ server <- function(input, output, session) {
 
 
   # ----Transcriptome Analysis----
-  # ---- Transcriptome QC ----
+  # ---- Transcriptome Create Object & QC ----
   # 1. 定义响应式变量存储数据
   RNA_values <- reactiveValues(
     is_example = FALSE,
@@ -1599,7 +1701,8 @@ server <- function(input, output, session) {
   }
 
   # 核心底层函数 2: 高级 Metadata 添加引擎 (处理数据框与向量)
-  AddMetaData_sciET <- function(object, meta_data, id_col = NULL, group_cols = NULL) {
+  AddMetaData_sciET <- function(object, meta_data, id_col = NULL,
+                                group_cols = NULL) {
     current_meta <- object$meta.data
     cell_names <- rownames(current_meta)
     # 情况 A: 向量模式 (用户上传了单列数据，或者强制按顺序匹配)
@@ -1762,7 +1865,25 @@ server <- function(input, output, session) {
     default_group <- NULL
     if (isTRUE(RNA_values$is_example)) {
       if ("Run" %in% cols) default_id <- "Run"
-      if ("Development_Stage" %in% cols) default_group <- "Development_Stage"
+      # if ("Development_Stage" %in% cols) default_group <- "Development_Stage"
+      preferred_meta_cols <- c(
+        "Development_Stage",
+        "Condition",
+        "Group",
+        "group",
+        "Sample_ID",
+        "sample_ID",
+        "Sample",
+        "sample",
+        "Donor",
+        "Patient",
+        "Subject",
+        "Replicate",
+        "Embryo",
+        "Mouse_ID",
+        "Batch"
+      )
+      default_group <- intersect(preferred_meta_cols, cols)
     }
     tagList(
       hr(),
@@ -1775,7 +1896,8 @@ server <- function(input, output, session) {
       selectizeInput("meta_group_col", "Select Grouping Info to Add:",
                      choices = cols,
                      multiple = TRUE,
-                     selected = NULL)
+                     selected = NULL),
+      helpText("For pseudobulk DEA, also select the biological replicate/sample column, such as Sample_ID, Donor, Patient, Embryo, or Mouse_ID.")
     )
   })
 
@@ -2172,7 +2294,8 @@ server <- function(input, output, session) {
     downloadButton("download_rds", "Download sciET Object (.rds)", class = "btn-success btn-lg", style = "width: 100%;")
   })
   output$download_rds <- downloadHandler(
-    filename = function() { paste0("sciET_Object_", Sys.Date(), ".rds") },
+    filename = function() {
+      paste0("sciET_Object_", Sys.Date(), ".rds") },
     content = function(file) {
       saveRDS(RNA_values$sci_object, file = file)
     }
@@ -2371,7 +2494,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Transcriptome Dim Reduction Clustering Server Logic ----
+  # ---- Transcriptome Dim Reduction Clustering ----
   # 0. 智能识别数据状态：决定显示 "上传框" 还是 "已连接提示"
   output$dr_data_status_ui <- renderUI({
     if (is.null(RNA_values$sci_object)) {
@@ -2579,7 +2702,9 @@ server <- function(input, output, session) {
           # 使用 C 级别的 FNN 极速构建 K-NN 图
           k_n <- min(20, nrow(cluster_input) - 1)
           knn_res <- FNN::get.knn(cluster_input, k = k_n)
-          edges <- do.call(rbind, lapply(1:nrow(cluster_input), function(i) cbind(rep(i, k_n), knn_res$nn.index[i, ])))
+          edges <- do.call(rbind, lapply(1:nrow(cluster_input),
+                                         function(i) cbind(rep(i, k_n),
+                                                           knn_res$nn.index[i, ])))
           progress$set(message = "Running Leiden Community Detection...", value = 0.9)
           g <- igraph::graph_from_edgelist(edges, directed = FALSE)
           g <- igraph::simplify(g)
@@ -2667,7 +2792,8 @@ server <- function(input, output, session) {
     }
   )
   output$dl_dr_plot_pdf <- downloadHandler(
-    filename = function() { paste0("scRNA_DimensionReduction_", Sys.Date(), ".pdf") },
+    filename = function() {
+      paste0("scRNA_DimensionReduction_", Sys.Date(), ".pdf") },
     content = function(file) {
       req(RNA_values$dr_plot_obj)
       # 因为是左右双图并排，所以宽度设宽一点 (width=12)
@@ -2691,9 +2817,11 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Transcriptome Differential Analysis Server Logic ----
+  # ---- Transcriptome Differential Analysis ----
   DEA_values <- reactiveValues(
-    markers = NULL    # 存储差异分析结果
+    markers = NULL,    # 存储差异分析结果
+    pseudobulk_counts = NULL,
+    pseudobulk_meta = NULL
   )
 
   # 0. 智能识别数据状态：无缝继承或提示上传
@@ -2738,6 +2866,37 @@ server <- function(input, output, session) {
     final_sel <- if (!is.null(current_sel) && current_sel %in% valid_groups) current_sel else valid_groups[1]
     selectInput("dea_group_col", "Cluster/Group Column:", choices = valid_groups, selected = final_sel)
   })
+  # 增加 sample/replicate column 选择器
+  output$dea_sample_col_ui <- renderUI({
+    req(RNA_values$sci_object)
+    obj <- RNA_values$sci_object
+    meta <- if (!is.null(obj$filter_meta.data)) obj$filter_meta.data else obj$meta.data
+    exclude_cols <- c("nCount_RNA", "nFeature_RNA", "percent_mt")
+    candidate_cols <- setdiff(colnames(meta), exclude_cols)
+    # 避免用户把当前比较分组列也选成 sample column
+    if (!is.null(input$dea_group_col)) {
+      candidate_cols <- setdiff(candidate_cols, input$dea_group_col)
+    }
+    if (length(candidate_cols) == 0) {
+      return(
+        tags$div(
+          style = "color: red;",
+          "No candidate sample/replicate column found. Please rebuild the object and include a biological replicate/sample column in metadata."
+        )
+      )
+    }
+    priority_pattern <- "sample|donor|patient|subject|replicate|rep|individual|mouse|embryo|batch|orig.ident"
+    priority_cols <- grep(priority_pattern, candidate_cols, ignore.case = TRUE, value = TRUE)
+    default_sel <- if (length(priority_cols) > 0) priority_cols[1] else ""
+    tagList(
+      selectInput(
+        "dea_sample_col",
+        "Biological replicate / sample column:",
+        choices = c("--- Please Select ---" = "", candidate_cols),
+        selected = default_sel
+      )
+    )
+  })
   # 2. 动态渲染对比组选择
   output$dea_comparison_ui <- renderUI({
     req(RNA_values$sci_object, input$dea_group_col)
@@ -2758,6 +2917,215 @@ server <- function(input, output, session) {
     }
   })
 
+  # 增加 pseudobulk edgeR 核心函数
+  RunPseudobulkEdgeR <- function(obj, group_col, sample_col,
+                                 ident_1, ident_2 = NULL,
+                                 mode = c("one_vs_rest", "one_vs_one"),
+                                 min_cells_per_pb = 10,
+                                 min_reps_per_group = 2,
+                                 min_pct = 0,
+                                 logfc_thresh = 0, auto_block = TRUE) {
+    mode <- match.arg(mode)
+    if (!requireNamespace("edgeR", quietly = TRUE)) {
+      stop("Pseudobulk analysis requires the Bioconductor package 'edgeR'. Please install edgeR.")
+    }
+    counts <- if (!is.null(obj$assays$RNA$filter_counts)) {
+      obj$assays$RNA$filter_counts
+    } else {
+      obj$assays$RNA$counts
+    }
+    meta <- if (!is.null(obj$filter_meta.data)) {
+      obj$filter_meta.data
+    } else {
+      obj$meta.data
+    }
+    if (is.null(counts) || is.null(meta)) {
+      stop("Counts or metadata are missing from the sciET object.")
+    }
+    if (!inherits(counts, "Matrix")) {
+      counts <- Matrix::Matrix(as.matrix(counts), sparse = TRUE)
+    }
+    common_cells <- intersect(colnames(counts), rownames(meta))
+    if (length(common_cells) < 2) {
+      stop("No matched cells between count matrix and metadata.")
+    }
+    counts <- counts[, common_cells, drop = FALSE]
+    meta <- meta[common_cells, , drop = FALSE]
+    if (!(group_col %in% colnames(meta))) {
+      stop("Selected group column is not found in metadata.")
+    }
+    if (!(sample_col %in% colnames(meta))) {
+      stop("Selected biological replicate/sample column is not found in metadata.")
+    }
+    if (sample_col == group_col) {
+      stop("The sample/replicate column cannot be the same as the comparison group column.")
+    }
+    group_vec <- as.character(meta[[group_col]])
+    sample_vec <- as.character(meta[[sample_col]])
+    valid <- !is.na(group_vec) & group_vec != "" &
+      !is.na(sample_vec) & sample_vec != ""
+    if (sum(valid) == 0) {
+      stop("No valid cells remain after removing missing group/sample labels.")
+    }
+    if (mode == "one_vs_one") {
+      if (is.null(ident_2) || ident_1 == ident_2) {
+        stop("For one-vs-one pseudobulk DEA, ident_1 and ident_2 must be different.")
+      }
+      use <- valid & group_vec %in% c(ident_1, ident_2)
+      cond_display <- ifelse(group_vec[use] == ident_1, ident_1, ident_2)
+      control_label <- ident_2
+    } else {
+      use <- valid
+      cond_display <- ifelse(group_vec[use] == ident_1, ident_1, "Rest")
+      control_label <- "Rest"
+    }
+    if (sum(use) == 0) {
+      stop("No cells available for the selected comparison.")
+    }
+    condition_internal <- ifelse(cond_display == ident_1, "Test", "Control")
+    cell_info <- data.frame(
+      cell_id = common_cells[use],
+      sample_id = sample_vec[use],
+      condition = condition_internal,
+      display_group = cond_display,
+      stringsAsFactors = FALSE
+    )
+    cells_test <- cell_info$cell_id[cell_info$condition == "Test"]
+    cells_ctrl <- cell_info$cell_id[cell_info$condition == "Control"]
+    if (length(cells_test) == 0 || length(cells_ctrl) == 0) {
+      stop("Both test and control groups must contain cells.")
+    }
+    # Cell-level detection fractions are reported for interpretability.
+    pct_1 <- Matrix::rowSums(counts[, cells_test, drop = FALSE] > 0) / length(cells_test)
+    pct_2 <- Matrix::rowSums(counts[, cells_ctrl, drop = FALSE] > 0) / length(cells_ctrl)
+    # Aggregate raw counts by sample x condition.
+    cell_info$pb_id <- paste(cell_info$sample_id, cell_info$condition, sep = "__")
+    pb_factor <- factor(cell_info$pb_id, levels = unique(cell_info$pb_id))
+    agg_design <- Matrix::sparse.model.matrix(~ 0 + pb_factor)
+    colnames(agg_design) <- levels(pb_factor)
+    pb_counts <- counts[, cell_info$cell_id, drop = FALSE] %*% agg_design
+    colnames(pb_counts) <- levels(pb_factor)
+    pb_meta <- cell_info[
+      match(levels(pb_factor), cell_info$pb_id),
+      c("pb_id", "sample_id", "condition", "display_group")
+    ]
+    pb_meta$n_cells <- as.integer(table(pb_factor)[pb_meta$pb_id])
+    rownames(pb_meta) <- pb_meta$pb_id
+    # Filter pseudobulk profiles with too few cells.
+    keep_pb <- pb_meta$n_cells >= min_cells_per_pb
+    pb_counts <- pb_counts[, keep_pb, drop = FALSE]
+    pb_meta <- pb_meta[keep_pb, , drop = FALSE]
+    if (ncol(pb_counts) < 4) {
+      stop("Too few pseudobulk profiles remain after min-cell filtering.")
+    }
+    # Remove zero-library pseudobulk profiles.
+    lib_size <- Matrix::colSums(pb_counts)
+    keep_lib <- lib_size > 0
+    pb_counts <- pb_counts[, keep_lib, drop = FALSE]
+    pb_meta <- pb_meta[keep_lib, , drop = FALSE]
+    pb_meta$condition <- factor(pb_meta$condition, levels = c("Control", "Test"))
+    rep_tab <- table(pb_meta$condition)
+    if (as.integer(rep_tab["Test"]) < min_reps_per_group ||
+        as.integer(rep_tab["Control"]) < min_reps_per_group) {
+      stop(sprintf(
+        paste0(
+          "Not enough biological replicates after pseudobulk aggregation. ",
+          "Test profiles: %d; Control profiles: %d; required: at least %d per group. ",
+          "Please select a true biological replicate column or reduce the min-cell threshold."
+        ),
+        as.integer(rep_tab["Test"]),
+        as.integer(rep_tab["Control"]),
+        min_reps_per_group
+      ))
+    }
+    # Build design matrix.
+    design <- NULL
+    design_type <- NULL
+    if (isTRUE(auto_block)) {
+      test_samples <- unique(pb_meta$sample_id[pb_meta$condition == "Test"])
+      ctrl_samples <- unique(pb_meta$sample_id[pb_meta$condition == "Control"])
+      paired_samples <- intersect(test_samples, ctrl_samples)
+      if (length(paired_samples) >= min_reps_per_group) {
+        keep_pair <- pb_meta$sample_id %in% paired_samples
+        tmp_meta <- droplevels(pb_meta[keep_pair, , drop = FALSE])
+        tmp_counts <- pb_counts[, keep_pair, drop = FALSE]
+        tmp_meta$sample_factor <- factor(tmp_meta$sample_id)
+        tmp_design <- stats::model.matrix(~ sample_factor + condition, data = tmp_meta)
+        if ("conditionTest" %in% colnames(tmp_design) &&
+            qr(tmp_design)$rank == ncol(tmp_design)) {
+          pb_meta <- tmp_meta
+          pb_counts <- tmp_counts
+          design <- tmp_design
+          design_type <- "sample-blocked paired design"
+        }
+      }
+    }
+    if (is.null(design)) {
+      design <- stats::model.matrix(~ condition, data = pb_meta)
+      design_type <- "group-only design"
+      if (qr(design)$rank < ncol(design)) {
+        stop("The pseudobulk design matrix is not full rank. Please check the selected group and sample columns.")
+      }
+    }
+    coef_idx <- which(colnames(design) == "conditionTest")
+    if (length(coef_idx) != 1) {
+      stop("Cannot identify the Test-vs-Control coefficient in the pseudobulk design matrix.")
+    }
+    # edgeR requires raw count-like integer values.
+    count_mat <- as.matrix(pb_counts)
+    if (any(abs(count_mat - round(count_mat)) > 1e-6, na.rm = TRUE)) {
+      stop("Pseudobulk edgeR requires raw integer counts. Non-integer values were detected.")
+    }
+    count_mat <- round(count_mat)
+    y <- edgeR::DGEList(counts = count_mat)
+    keep_gene <- edgeR::filterByExpr(y, design = design)
+    if (sum(keep_gene) == 0) {
+      stop("No genes were retained by edgeR::filterByExpr. Please check count data and group sizes.")
+    }
+    y <- y[keep_gene, , keep.lib.sizes = FALSE]
+    y <- edgeR::calcNormFactors(y, method = "TMM")
+    y <- edgeR::estimateDisp(y, design = design, robust = TRUE)
+    fit <- edgeR::glmQLFit(y, design = design, robust = TRUE)
+    qlf <- edgeR::glmQLFTest(fit, coef = coef_idx)
+    tab <- edgeR::topTags(qlf, n = Inf, sort.by = "PValue")$table
+    genes <- rownames(tab)
+    res_df <- data.frame(
+      gene = genes,
+      p_val = tab$PValue,
+      avg_log2FC = tab$logFC,
+      pct.1 = as.numeric(pct_1[genes]),
+      pct.2 = as.numeric(pct_2[genes]),
+      cluster = ident_1,
+      comparison = paste0(ident_1, " vs ", control_label),
+      p_val_adj = tab$FDR,
+      method = paste0("Pseudobulk edgeR QL-F test; ", design_type),
+      n_pb.1 = sum(pb_meta$condition == "Test"),
+      n_pb.2 = sum(pb_meta$condition == "Control"),
+      n_cells.1 = length(cells_test),
+      n_cells.2 = length(cells_ctrl),
+      stringsAsFactors = FALSE
+    )
+    # Apply user display filters after model fitting.
+    pass_filter <- rep(TRUE, nrow(res_df))
+    if (!is.null(min_pct) && min_pct > 0) {
+      pass_filter <- pass_filter & (res_df$pct.1 >= min_pct | res_df$pct.2 >= min_pct)
+    }
+    if (!is.null(logfc_thresh) && logfc_thresh > 0) {
+      pass_filter <- pass_filter & abs(res_df$avg_log2FC) >= logfc_thresh
+    }
+    res_df <- res_df[pass_filter, , drop = FALSE]
+    if (nrow(res_df) == 0) {
+      stop("Pseudobulk DEA completed, but no genes passed the user-defined Min Pct / Log2FC filters.")
+    }
+    res_df <- res_df[order(res_df$p_val), ]
+    return(list(
+      markers = res_df,
+      pseudobulk_counts = pb_counts,
+      pseudobulk_meta = pb_meta,
+      design_type = design_type
+    ))
+  }
+
   # 3. 核心算法：手写稀疏矩阵极速 Wilcoxon DEA (完全取代 Seurat)
   observeEvent(input$run_dea, {
     tic("RNA difference analysis total time:")
@@ -2771,6 +3139,51 @@ server <- function(input, output, session) {
     on.exit(progress$close())
     tryCatch({
       obj <- RNA_values$sci_object
+      dea_method <- if (is.null(input$dea_test_method)) {
+        "wilcox"
+      } else {
+        input$dea_test_method
+      }
+      # New branch: pseudobulk edgeR
+      if (dea_method == "pseudobulk") {
+        if (is.null(input$dea_sample_col) || input$dea_sample_col == "") {
+          stop("Please select a biological replicate/sample column for pseudobulk DEA.")
+        }
+        progress$set(message = "Aggregating cells into pseudobulk profiles...", value = 0.2)
+        ident_2_use <- if (input$dea_mode == "one_vs_one") {
+          input$dea_ident_2
+        } else {
+          NULL
+        }
+        pb_res <- RunPseudobulkEdgeR(
+          obj = obj,
+          group_col = input$dea_group_col,
+          sample_col = input$dea_sample_col,
+          ident_1 = input$dea_ident_1,
+          ident_2 = ident_2_use,
+          mode = input$dea_mode,
+          min_cells_per_pb = input$pb_min_cells,
+          min_reps_per_group = input$pb_min_reps,
+          min_pct = input$dea_min_pct,
+          logfc_thresh = input$dea_logfc_thresh,
+          auto_block = isTRUE(input$pb_auto_block)
+        )
+        DEA_values$markers <- pb_res$markers
+        DEA_values$pseudobulk_counts <- pb_res$pseudobulk_counts
+        DEA_values$pseudobulk_meta <- pb_res$pseudobulk_meta
+        progress$set(message = "Pseudobulk edgeR completed.", value = 1)
+        showNotification(
+          sprintf(
+            "Pseudobulk DEA completed using edgeR (%s). Returned %d genes.",
+            pb_res$design_type,
+            nrow(pb_res$markers)
+          ),
+          type = "message",
+          duration = 8
+        )
+        return(NULL)
+      }
+      # Existing branch: cell-level Wilcoxon
       meta <- if(!is.null(obj$filter_meta.data)) obj$filter_meta.data else obj$meta.data
       mat <- if(!is.null(obj$assays$RNA$filter_counts)) obj$assays$RNA$filter_counts else obj$assays$RNA$counts
       progress$set(message = "Preparing data matrices...", value = 0.1)
@@ -2993,18 +3406,24 @@ server <- function(input, output, session) {
   )
 
   observeEvent(input$btn_reset_dea, {
-    # 1. 彻底清空底层响应式变量
-    RNA_values$sci_object <- NULL       # 置空单细胞对象 (会触发 dea_data_status_ui 重新渲染为上传框)
-    DEA_values$markers <- NULL          # 置空差异基因表格数据
-    RNA_values$volcano_plot_obj <- NULL # 置空火山图对象
-    # 2. 强制重置前端的静态输入控件 (将其弹回默认值)
+    RNA_values$sci_object <- NULL
+    DEA_values$markers <- NULL
+    DEA_values$pseudobulk_counts <- NULL
+    DEA_values$pseudobulk_meta <- NULL
+    RNA_values$volcano_plot_obj <- NULL
     shinyjs::reset("dea_upload_rds")
     shinyjs::reset("dea_mode")
     shinyjs::reset("dea_min_pct")
     shinyjs::reset("dea_logfc_thresh")
     shinyjs::reset("volcano_fc_cut")
     shinyjs::reset("volcano_p_cut")
-    # 3. 弹出系统通知
+    try({
+      shinyjs::reset("dea_test_method")
+      shinyjs::reset("dea_sample_col")
+      shinyjs::reset("pb_min_cells")
+      shinyjs::reset("pb_min_reps")
+      shinyjs::reset("pb_auto_block")
+    }, silent = TRUE)
     showNotification(
       "DEA data and settings cleared! Ready for new analysis.",
       type = "warning",
@@ -3013,7 +3432,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Transcriptome Pseudotime Server Logic ----
+  # ---- Transcriptome Pseudotime Analysis ----
   library(princurve)
   # 0. 智能识别数据状态
   output$pseudo_data_status_ui <- renderUI({
@@ -3231,7 +3650,8 @@ server <- function(input, output, session) {
     return(combined_plot)
   })
   output$dl_pseudo_plot_pdf <- downloadHandler(
-    filename = function() { paste0("Trajectory_Plot_", Sys.Date(), ".pdf") },
+    filename = function() {
+      paste0("Trajectory_Plot_", Sys.Date(), ".pdf") },
     content = function(file) {
       req(RNA_values$pseudo_plot_obj)
       # 将原来的 width = 8, height = 7 改为宽屏比例
@@ -3239,7 +3659,8 @@ server <- function(input, output, session) {
     }
   )
   output$download_pseudo_data <- downloadHandler(
-    filename = function() { paste0("Pseudotime_Data_", Sys.Date(), ".csv") },
+    filename = function() {
+      paste0("Pseudotime_Data_", Sys.Date(), ".csv") },
     content = function(file) {
       req(RNA_values$sci_object$reductions$pseudotime)
       pt_res <- RNA_values$sci_object$reductions$pseudotime
@@ -3927,7 +4348,6 @@ server <- function(input, output, session) {
 
 
   # ---- Epigenome Dim Reduction ----
-  # Step 2: Epigenome Dimension Reduction Server Logic
   DR_values <- reactiveValues(
     group_raw = NULL,
     plot_obj = NULL,
@@ -4324,22 +4744,30 @@ server <- function(input, output, session) {
   # --- 6. 渲染图表与下载 ---
   output$dr_plot_output <- renderPlot({ req(DR_values$plot_obj); DR_values$plot_obj })
   output$dr_btn_download_plot <- downloadHandler(
-    filename = function() { paste0("DimRed_", input$dr_method, ".pdf") },
-    content = function(file) { ggsave(file, plot = DR_values$plot_obj, width = 8, height = 6) }
+    filename = function() {
+      paste0("DimRed_", input$dr_method, ".pdf") },
+    content = function(file) {
+      ggsave(file, plot = DR_values$plot_obj, width = 8, height = 6) }
   )
   output$dr_btn_download_data <- downloadHandler(
-    filename = function() { paste0("DimRed_Coords_", input$dr_method, ".csv") },
-    content = function(file) { data.table::fwrite(DR_values$coord_df, file, row.names = FALSE) }
+    filename = function() {
+      paste0("DimRed_Coords_", input$dr_method, ".csv") },
+    content = function(file) {
+      data.table::fwrite(DR_values$coord_df, file, row.names = FALSE) }
   )
   # 山脊图输出
   output$dr_plot_ridge <- renderPlot({ req(DR_values$ridge_obj); DR_values$ridge_obj })
   output$dr_btn_download_ridge_plot <- downloadHandler(
-    filename = function() { paste0("Epigenetic_Landscape_Ridge.pdf") },
-    content = function(file) { ggsave(file, plot = DR_values$ridge_obj, width = 8, height = 6) }
+    filename = function() {
+      paste0("Epigenetic_Landscape_Ridge.pdf") },
+    content = function(file) {
+      ggsave(file, plot = DR_values$ridge_obj, width = 8, height = 6) }
   )
   output$dr_btn_download_ridge_data <- downloadHandler(
-    filename = function() { paste0("Epigenetic_Landscape_Stats.csv") },
-    content = function(file) { data.table::fwrite(DR_values$ridge_df, file, row.names = FALSE) }
+    filename = function() {
+      paste0("Epigenetic_Landscape_Stats.csv") },
+    content = function(file) {
+      data.table::fwrite(DR_values$ridge_df, file, row.names = FALSE) }
   )
 
   observeEvent(input$dr_btn_reset, {
@@ -4362,7 +4790,6 @@ server <- function(input, output, session) {
 
 
   # ---- Epigenome Data DEG ----
-  # Step 3: Differential Analysis Server Logic
   Diff_values <- reactiveValues(
     group_raw = NULL,
     result_df = NULL,
@@ -4835,12 +5262,16 @@ server <- function(input, output, session) {
   })
   output$diff_volcano_plot <- renderPlot({ req(Diff_values$plot_obj); Diff_values$plot_obj })
   output$diff_btn_dl_csv <- downloadHandler(
-    filename = function() { paste0("DA_", input$diff_target_group, "_", Sys.Date(), ".csv") },
-    content = function(file) { data.table::fwrite(Diff_values$result_df, file, row.names = FALSE) }
+    filename = function() {
+      paste0("DA_", input$diff_target_group, "_", Sys.Date(), ".csv") },
+    content = function(file) {
+      data.table::fwrite(Diff_values$result_df, file, row.names = FALSE) }
   )
   output$diff_btn_dl_plot <- downloadHandler(
-    filename = function() { paste0("Volcano_", input$diff_target_group, "_", Sys.Date(), ".pdf") },
-    content = function(file) { ggplot2::ggsave(file, plot = Diff_values$plot_obj, width = 8, height = 6) }
+    filename = function() {
+      paste0("Volcano_", input$diff_target_group, "_", Sys.Date(), ".pdf") },
+    content = function(file) {
+      ggplot2::ggsave(file, plot = Diff_values$plot_obj, width = 8, height = 6) }
   )
 
   observeEvent(input$diff_btn_reset, {
@@ -4864,211 +5295,8 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- ATAC Format Converter ----
-  # 初始化 reactiveValues，移除不需要的 out_dir_mapped
-  rv_atac <- reactiveValues(
-    out_dir = NULL,
-    preview_df = NULL,
-    preview_df_mapped = NULL
-  )
-
-  observeEvent(input$btn_convert_atac, {
-    req(input$atac_matrix_file)
-    id_reading <- showNotification("Processing Data & Computing... Please wait.",
-                                   duration = NULL, type = "message", closeButton = FALSE)
-    # 1. 智能容错读取
-    raw_data <- tryCatch({
-      df <- data.table::fread(input$atac_matrix_file$datapath, data.frame = TRUE, header = "auto", fill = TRUE)
-      if(all(is.na(df[[1]])) || df[[1]][1] == "") stop("Header mismatch in fread")
-      df
-    }, error = function(e1) {
-      tryCatch({
-        read.csv(input$atac_matrix_file$datapath, check.names = FALSE, stringsAsFactors = FALSE)
-      }, error = function(e2) {
-        removeNotification(id_reading)
-        showNotification(paste("File format error:", e2$message), type = "error", duration = 15)
-        return(NULL)
-      })
-    })
-    req(raw_data)
-    regions <- raw_data[[1]]
-    counts_df <- raw_data[, -1, drop = FALSE]
-    cell_names <- colnames(counts_df)
-    counts_mat <- as.matrix(counts_df)
-    mode(counts_mat) <- "numeric"
-    counts_mat[is.na(counts_mat)] <- 0
-    # TF-IDF 计算
-    col_sums <- colSums(counts_mat, na.rm = TRUE)
-    col_sums[col_sums == 0] <- 1
-    tf_mat <- sweep(counts_mat, 2, col_sums, FUN = "/")
-    num_cells <- ncol(counts_mat)
-    row_cells_detected <- rowSums(counts_mat > 0, na.rm = TRUE)
-    idf <- rep(0, nrow(counts_mat))
-    valid_peaks <- row_cells_detected > 0
-    idf[valid_peaks] <- log(1 + num_cells / row_cells_detected[valid_peaks])
-    tfidf_mat <- sweep(tf_mat, 1, idf, FUN = "*")
-    cell_max_tfidf <- apply(tfidf_mat, 2, max, na.rm = TRUE)
-    cell_max_tfidf[cell_max_tfidf == 0 | is.na(cell_max_tfidf)] <- 1
-    level_mat <- sweep(tfidf_mat, 2, cell_max_tfidf, FUN = "/")
-    # 解析原始 Regions
-    regions_clean <- gsub(":", "-", regions)
-    peak_parts <- strsplit(regions_clean, "-")
-    chr_vec <- sapply(peak_parts, function(x) if(length(x)>=1) x[1] else NA)
-    start_vec <- as.numeric(sapply(peak_parts, function(x) if(length(x)>=2) x[2] else NA))
-    end_vec <- as.numeric(sapply(peak_parts, function(x) if(length(x)>=3) x[3] else NA))
-    atac_gr <- GRanges(seqnames = chr_vec, ranges = IRanges(start = start_vec, end = end_vec))
-    # 2. 读取 Target Region
-    has_target <- !is.null(input$target_region_file)
-    target_gr <- NULL
-    target_regions_chr <- NULL
-    target_regions_str <- NULL
-    hit_dt <- NULL
-    if (has_target) {
-      target_df <- tryCatch({
-        tmp <- data.table::fread(input$target_region_file$datapath, select = 1:3, header = "auto")
-        data.table::setnames(tmp, 1:3, c("chr", "start", "end"))
-        tmp
-      }, error = function(e) {
-        showNotification("Target file invalid. Must have at least 3 columns (chr, start, end).", type = "warning")
-        return(NULL)
-      })
-      if (!is.null(target_df)) {
-        target_regions_chr <- target_df
-        target_regions_str <- paste0(target_df$chr, ":", target_df$start, "-", target_df$end)
-        target_gr <- GRanges(seqnames = target_df$chr, ranges = IRanges(start = target_df$start, end = target_df$end))
-        hits <- findOverlaps(target_gr, atac_gr)
-        hit_dt <- data.table::data.table(target_idx = queryHits(hits), atac_idx = subjectHits(hits))
-      } else {
-        has_target <- FALSE
-      }
-    }
-    # 3. 构造 Preview 数据 (预览前 5 个细胞)
-    preview_cells <- cell_names[1:min(5, length(cell_names))]
-    # A. 原始 Preview
-    preview_df <- data.frame(regionID = regions, stringsAsFactors = FALSE)
-    for (cell in preview_cells) {
-      cell_levels <- level_mat[, cell]
-      meth_val <- round(cell_levels * 100)
-      preview_df[[paste0(cell, ".meth")]] <- meth_val
-      preview_df[[paste0(cell, ".nonmeth")]] <- 100 - meth_val
-      preview_df[[paste0(cell, ".level")]] <- round(cell_levels, 4)
-    }
-    rv_atac$preview_df <- preview_df
-    # B. Target Mapped Preview
-    if (has_target) {
-      preview_df_mapped <- data.frame(Target_Region = target_regions_str, stringsAsFactors = FALSE)
-      for (cell in preview_cells) {
-        cell_levels <- level_mat[, cell]
-        hit_dt_cell <- data.table::copy(hit_dt)
-        hit_dt_cell$lvl <- cell_levels[hit_dt_cell$atac_idx]
-        agg <- hit_dt_cell[, .(mapped_lvl = max(lvl)), by = target_idx]
-        target_levels <- rep(0, length(target_gr))
-        target_levels[agg$target_idx] <- agg$mapped_lvl
-        meth_val_m <- round(target_levels * 100)
-        preview_df_mapped[[paste0(cell, ".meth")]] <- meth_val_m
-        preview_df_mapped[[paste0(cell, ".nonmeth")]] <- 100 - meth_val_m
-        preview_df_mapped[[paste0(cell, ".level")]] <- round(target_levels, 4)
-      }
-      rv_atac$preview_df_mapped <- preview_df_mapped
-    } else {
-      rv_atac$preview_df_mapped <- data.frame(Message = "No Target Regions uploaded.")
-    }
-    # 4. 生成所有细胞的 Original .cov 文件 (后台并行处理)
-    # 移除了 mapped cov 文件的生成逻辑，大幅提升速度
-    temp_dir_orig <- file.path(tempdir(), paste0("scMATE_orig_", as.integer(Sys.time())))
-    dir.create(temp_dir_orig, showWarnings = FALSE)
-    removeNotification(id_reading)
-    withProgress(message = 'Generating Original .cov files...', value = 0, {
-      for (i in seq_along(cell_names)) {
-        cell <- cell_names[i]
-        levels_out <- level_mat[, i]
-        keep_idx <- which(levels_out > 0 & !is.na(chr_vec) & !is.na(start_vec) & !is.na(end_vec))
-        if (length(keep_idx) > 0) {
-          valid_levels <- levels_out[keep_idx]
-          meth_out <- round(valid_levels * 100)
-          cov_out <- data.frame(
-            chr = chr_vec[keep_idx], start = start_vec[keep_idx], end = end_vec[keep_idx],
-            level = valid_levels, meth = meth_out, nonmeth = 100 - meth_out
-          )
-          write.table(cov_out, file.path(temp_dir_orig, paste0(cell, ".cov")), sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
-        }
-        incProgress(1 / length(cell_names), detail = paste("Processed", cell))
-      }
-    })
-    # 5. 更新 UI 状态，显示右上角的按钮
-    rv_atac$out_dir <- temp_dir_orig
-    shinyjs::show("download_atac_covs")
-    shinyjs::show("download_preview_orig")
-    if (has_target) {
-      shinyjs::show("download_preview_mapped")
-      showNotification("Conversion and Mapping complete! Ready for download.", type = "message")
-    } else {
-      shinyjs::hide("download_preview_mapped")
-      showNotification("Original Conversion complete! Ready for download.", type = "message")
-    }
-  })
-
-  # 【新增】：重置按钮逻辑
-  observeEvent(input$btn_reset_atac, {
-    # 1. 重置文件上传组件 (需要 shinyjs::useShinyjs() 支持)
-    shinyjs::reset("atac_matrix_file")
-    shinyjs::reset("target_region_file")
-    # 2. 清空内部存储的数据 (这会自动清空右侧的 DT 表格)
-    rv_atac$out_dir <- NULL
-    rv_atac$preview_df <- NULL
-    rv_atac$preview_df_mapped <- NULL
-    # 3. 隐藏所有相关的下载按钮
-    shinyjs::hide("download_atac_covs")
-    shinyjs::hide("download_preview_orig")
-    shinyjs::hide("download_preview_mapped")
-    # 4. 提示用户重置成功
-    showNotification("Data and UI have been successfully reset.", type = "message")
-  })
-
-  # --- 独立渲染 DT 表格 ---
-  output$atac_preview_table <- renderDT({
-    req(rv_atac$preview_df)
-    datatable(rv_atac$preview_df, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE, class = "cell-border stripe")
-  })
-
-  output$atac_mapped_preview_table <- renderDT({
-    req(rv_atac$preview_df_mapped)
-    datatable(rv_atac$preview_df_mapped, options = list(pageLength = 10, scrollX = TRUE), rownames = FALSE, class = "cell-border stripe")
-  })
-
-  # --- 独立的下载处理器 ---
-  # 1. 原始 .cov ZIP 下载
-  output$download_atac_covs <- downloadHandler(
-    filename = function() { paste0("scATAC_Original_cov_", format(Sys.time(), "%Y%m%d_%H%M"), ".zip") },
-    content = function(file) {
-      req(rv_atac$out_dir)
-      owd <- setwd(rv_atac$out_dir); on.exit(setwd(owd))
-      zip::zip(zipfile = file, files = list.files(pattern = "\\.cov$"))
-    }
-  )
-
-  # 2. 原始表格数据 (CSV) 下载
-  output$download_preview_orig <- downloadHandler(
-    filename = function() { paste0("scATAC_Original_PreviewData_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv") },
-    content = function(file) {
-      req(rv_atac$preview_df)
-      write.csv(rv_atac$preview_df, file, row.names = FALSE)
-    }
-  )
-
-  # 3. Mapped 表格数据 (CSV) 下载
-  output$download_preview_mapped <- downloadHandler(
-    filename = function() { paste0("scATAC_Mapped_PreviewData_", format(Sys.time(), "%Y%m%d_%H%M"), ".csv") },
-    content = function(file) {
-      req(rv_atac$preview_df_mapped)
-      write.csv(rv_atac$preview_df_mapped, file, row.names = FALSE)
-    }
-  )
-
-
-
   # ----Integration Analysis----
-  # ---- Integration Analysis Server Logic (Multi-Sheet Support) ----
+  # ---- Integration Analysis Server Logic ----
   Integ_values <- reactiveValues(
     meta_file_path = NULL,
     sheets = NULL,
@@ -5147,8 +5375,12 @@ server <- function(input, output, session) {
     )
   }
 
-  observeEvent(input$cpg_sheet, { res <- create_col_selectors("cpg", input$cpg_sheet); output$ui_cpg_id_col <- res[[1]]; output$ui_cpg_group_col <- res[[2]] })
-  observeEvent(input$gpc_sheet, { res <- create_col_selectors("gpc", input$gpc_sheet); output$ui_gpc_id_col <- res[[1]]; output$ui_gpc_group_col <- res[[2]] })
+  observeEvent(input$cpg_sheet, {
+    res <- create_col_selectors("cpg", input$cpg_sheet);
+    output$ui_cpg_id_col <- res[[1]]; output$ui_cpg_group_col <- res[[2]] })
+  observeEvent(input$gpc_sheet, {
+    res <- create_col_selectors("gpc", input$gpc_sheet);
+    output$ui_gpc_id_col <- res[[1]]; output$ui_gpc_group_col <- res[[2]] })
   observeEvent(input$integ_rna_diff, {
     req(input$integ_rna_diff)
     cols <- colnames(data.table::fread(input$integ_rna_diff$datapath, nrows = 1, data.table = FALSE))
@@ -5254,7 +5486,9 @@ server <- function(input, output, session) {
     tic("Integration multi-omics total time:")
     req(input$global_target_group)
     target_group <- trimws(as.character(input$global_target_group))
-    if(target_group == "") { showNotification("Please enter a valid Target Group Name!", type = "error"); return(NULL) }
+    if(target_group == "") {
+      showNotification("Please enter a valid Target Group Name!", type = "error");
+      return(NULL) }
     mode <- input$integ_mode # "tri", "rna_cpg", "cpg_gpc"
     if (Integ_values$use_example) {
       path_region   <- "data/mm10_genetss2k_choose30000.csv"
@@ -5294,8 +5528,10 @@ server <- function(input, output, session) {
       req(Integ_values$rna_obj, input$rna_rds_group_col)
       group_col_rna <- input$rna_rds_group_col
     }
-    if (mode %in% c("tri", "rna_cpg", "cpg_gpc")) { req(input$cpg_sheet, input$cpg_id_col, input$cpg_group_col) }
-    if (mode %in% c("tri", "cpg_gpc", "rna_gpc")) { req(input$gpc_sheet, input$gpc_id_col, input$gpc_group_col) }
+    if (mode %in% c("tri", "rna_cpg", "cpg_gpc")) {
+      req(input$cpg_sheet, input$cpg_id_col, input$cpg_group_col) }
+    if (mode %in% c("tri", "cpg_gpc", "rna_gpc")) {
+      req(input$gpc_sheet, input$gpc_id_col, input$gpc_group_col) }
     progress <- shiny::Progress$new()
     progress$set(message = "Starting Integration...", value = 0.1)
     on.exit(progress$close())
@@ -5364,7 +5600,10 @@ server <- function(input, output, session) {
       }
       # === STEP C: Helper for Methylation Processing ===
       # 【Bug修复区】：修复了 dplyr::inner_join 时列名被覆盖导致 chrdata 不存在的问题
-      process_meth_layer <- function(mat_path, dmr_path, sheet_name, id_col, group_col, type_name, region_map, filter_mode, pval_col, pval_th, diff_col, diff_th) {
+      process_meth_layer <- function(mat_path, dmr_path,sheet_name,
+                                     id_col, group_col, type_name,
+                                     region_map, filter_mode, pval_col,
+                                     pval_th, diff_col, diff_th) {
         meta_df <- readxl::read_excel(Integ_values$meta_file_path, sheet = sheet_name)
         meta_df[[group_col]] <- trimws(as.character(meta_df[[group_col]]))
         if(!target_group %in% meta_df[[group_col]]) stop(paste(type_name, "Error: Target group '", target_group, "' not found in Excel sheet", sheet_name))
@@ -5626,10 +5865,29 @@ server <- function(input, output, session) {
     DT::datatable(Integ_values$merged_df, options = list(scrollX = TRUE, pageLength = 10), rownames = FALSE) %>%
       DT::formatRound(columns = cols_to_round, digits = 3)
   })
-  output$integ_download_data <- downloadHandler(filename = function() { paste0("Integrated_Data_", input$global_target_group, ".csv") }, content = function(file) { data.table::fwrite(Integ_values$merged_df, file, row.names = FALSE) })
-  output$integ_download_scatter_pdf <- downloadHandler(filename = function() { paste0("MultiOmics_Correlations_", input$global_target_group, ".pdf") }, content = function(file) { req(Integ_values$plot_scatter_obj); width_val <- ifelse(ncol(Integ_values$merged_df) > 5, 15, 6); ggsave(file, plot = Integ_values$plot_scatter_obj, width = width_val, height = 5, device = "pdf") })
-  output$integ_download_matrix_pdf <- downloadHandler(filename = function() { paste0("MultiOmics_MatrixPlot_", input$global_target_group, ".pdf") }, content = function(file) { req(Integ_values$plot_matrix_obj); ggsave(file, plot = Integ_values$plot_matrix_obj, width = 8, height = 8, device = "pdf") })
-  output$integ_btn_dl_example <- downloadHandler(filename = function() { paste0("scMATE_MultiOmics_Example_", Sys.Date(), ".zip") }, content = function(file) { existing_zip <- "data/Integration_example_data.zip"; if (file.exists(existing_zip)) { file.copy(existing_zip, file) } else { stop("Example ZIP file is missing!") } }, contentType = "application/zip")
+
+  output$integ_download_data <- downloadHandler(filename = function() {
+    paste0("Integrated_Data_", input$global_target_group, ".csv") },
+    content = function(file) { data.table::fwrite(Integ_values$merged_df, file, row.names = FALSE) })
+
+  output$integ_download_scatter_pdf <- downloadHandler(filename = function() {
+    paste0("MultiOmics_Correlations_", input$global_target_group, ".pdf") },
+    content = function(file) { req(Integ_values$plot_scatter_obj);
+      width_val <- ifelse(ncol(Integ_values$merged_df) > 5, 15, 6);
+      ggsave(file, plot = Integ_values$plot_scatter_obj, width = width_val, height = 5, device = "pdf") })
+
+  output$integ_download_matrix_pdf <- downloadHandler(filename = function() {
+    paste0("MultiOmics_MatrixPlot_", input$global_target_group, ".pdf") },
+    content = function(file) { req(Integ_values$plot_matrix_obj);
+      ggsave(file, plot = Integ_values$plot_matrix_obj, width = 8, height = 8, device = "pdf") })
+
+  output$integ_btn_dl_example <- downloadHandler(filename = function() {
+    paste0("scMATE_MultiOmics_Example_", Sys.Date(), ".zip") },
+    content = function(file) { existing_zip <- "data/Integration_example_data.zip";
+    if (file.exists(existing_zip)) { file.copy(existing_zip, file) }
+    else { stop("Example ZIP file is missing!") } },
+    contentType = "application/zip")
+
   # Data Integration 模块 - 顶部数据概览 Boxes
   output$integ_features_box <- renderValueBox({
     num <- 0; box_title <- "Awaiting Integration"
@@ -5680,7 +5938,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Multi-omics Data Analysis (Fixed & Enhanced) ----
+  # ---- Multi-omics Data Analysis (Fixed) ----
   Multi_values <- reactiveValues(
     raw_data = NULL,
     topo_plot = NULL,
@@ -5688,9 +5946,566 @@ server <- function(input, output, session) {
     heatmap_plot = NULL,
     topo_data = NULL,      # 新增：拓扑图数据
     states_data = NULL,    # 新增：状态统计数据
+    states_gene_data = NULL,
     heatmap_data = NULL,   # 新增：热图打分数据
     unlink_step1 = FALSE   # 新增：用于拦截 Step1 数据的软断开标志
   )
+
+  # DMCS helper functions
+  robust_z_pair <- function(x, clip = 3, transform = c("none", "logit")) {
+    transform <- match.arg(transform)
+    x <- suppressWarnings(as.numeric(x))
+    if (any(!is.finite(x))) {
+      stop("Input contains non-finite or non-numeric values.")
+    }
+    if (transform == "logit") {
+      eps <- 1e-6
+      x <- qlogis(pmin(pmax(x, eps), 1 - eps))
+    }
+    center_val <- stats::median(x, na.rm = TRUE)
+    scale_val <- stats::mad(
+      x,
+      center = center_val,
+      constant = 1.4826,
+      na.rm = TRUE
+    )
+    if (!is.finite(scale_val) || scale_val < 1e-8) {
+      scale_val <- stats::sd(x, na.rm = TRUE)
+    }
+    if (!is.finite(scale_val) || scale_val < 1e-8) {
+      scale_val <- 1
+    }
+    z_raw <- (x - center_val) / scale_val
+    z_clipped <- pmax(pmin(z_raw, clip), -clip)
+    list(
+      raw = z_raw,
+      clipped = z_clipped,
+      center = center_val,
+      scale = scale_val
+    )
+  }
+
+
+  make_signature_library <- function(available_z_cols) {
+    raw_lib <- list(
+      Canonical_active = c(
+        Z_RNA = 1,
+        Z_GpC = 1,
+        Z_CpG = -1
+      ),
+      Canonical_silent = c(
+        Z_RNA = -1,
+        Z_GpC = -1,
+        Z_CpG = 1
+      ),
+      Poised_open = c(
+        Z_RNA = -1,
+        Z_GpC = 1,
+        Z_CpG = -1
+      ),
+      Expressed_methylated = c(
+        Z_RNA = 1,
+        Z_CpG = 1
+      ),
+      Accessible_methylated = c(
+        Z_GpC = 1,
+        Z_CpG = 1
+      ),
+      RNA_uncoupled = c(
+        Z_RNA = 1,
+        Z_GpC = -1
+      ),
+      Closed_unmethylated = c(
+        Z_RNA = -1,
+        Z_GpC = -1,
+        Z_CpG = -1
+      )
+    )
+    lib <- lapply(raw_lib, function(w) {
+      w <- w[names(w) %in% available_z_cols]
+      w <- w[w != 0]
+      w
+    })
+    lib <- lib[vapply(lib, length, integer(1)) >= 2]
+    # remove duplicated signatures after subsetting to available modalities
+    sig_key <- vapply(
+      lib,
+      function(w) paste(names(w), w, collapse = ";"),
+      character(1)
+    )
+    lib[!duplicated(sig_key)]
+  }
+
+  project_signature <- function(z_mat, w) {
+    z_sub <- z_mat[, names(w), drop = FALSE]
+    as.numeric(z_sub %*% as.numeric(w) / sqrt(sum(w^2)))
+  }
+
+  cosine_signature <- function(z_mat, w) {
+    z_sub <- z_mat[, names(w), drop = FALSE]
+    dot_val <- as.numeric(z_sub %*% as.numeric(w))
+    denom <- sqrt(rowSums(z_sub^2)) * sqrt(sum(w^2))
+    out <- dot_val / denom
+    out[!is.finite(out)] <- 0
+    out
+  }
+
+  empirical_signature_p <- function(z_mat, signatures, observed,
+                                    selected_signature, B = 0, seed = 123) {
+    B <- as.integer(B)
+    if (!is.finite(B) || B <= 0) {
+      return(rep(NA_real_, length(observed)))
+    }
+    set.seed(seed)
+    z_mat <- as.matrix(z_mat)
+    n <- nrow(z_mat)
+    null_scores <- vector("list", B)
+    for (b in seq_len(B)) {
+      z_perm <- z_mat
+      # independently permute each modality across genes
+      # this preserves marginal modality distributions but breaks gene-level matching
+      for (j in seq_len(ncol(z_perm))) {
+        z_perm[, j] <- sample(z_perm[, j], size = n, replace = FALSE)
+      }
+      if (identical(selected_signature, "Auto_best")) {
+        perm_score_mat <- as.data.frame(
+          lapply(signatures, function(w) {
+            project_signature(z_perm, w)
+          })
+        )
+        perm_score_mat <- as.matrix(perm_score_mat)
+        null_scores[[b]] <- apply(perm_score_mat, 1, max, na.rm = TRUE)
+      } else {
+        null_scores[[b]] <- project_signature(
+          z_perm,
+          signatures[[selected_signature]]
+        )
+      }
+    }
+    null_scores <- unlist(null_scores, use.names = FALSE)
+    p_emp <- vapply(
+      observed,
+      function(o) {
+        (1 + sum(null_scores >= o, na.rm = TRUE)) /
+          (length(null_scores) + 1)
+      },
+      numeric(1)
+    )
+
+    p_emp
+  }
+
+  .make_state_signatures <- function(has_rna, has_cpg, has_gpc) {
+    if (has_rna && has_cpg && has_gpc) {
+      # RNA, CpG, GpC 三组学
+      # 注意：
+      # RNA ↑, CpG ↓, GpC ↑ = canonical active
+      # RNA ↓, CpG ↑, GpC ↓ = canonical repressed
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "1_Canonical_Active",
+        "1. Canonical active\nRNA↑ CpG↓ GpC↑",
+        1, -1, 1, "#DC0000",
+        "2_Canonical_Repressed",
+        "2. Canonical repressed\nRNA↓ CpG↑ GpC↓",
+        -1, 1, -1, "#4DBBD5",
+        "3_Primed_or_Poised",
+        "3. Primed / poised\nRNA↓ CpG↓ GpC↑",
+        -1, -1, 1, "#3C5488",
+        "4_Methylated_Open_Expressed",
+        "4. Methylated-open expressed\nRNA↑ CpG↑ GpC↑",
+        1, 1, 1, "#F39B7F",
+        "5_Expressed_Closed_Unmeth",
+        "5. Expressed but closed / unmeth\nRNA↑ CpG↓ GpC↓",
+        1, -1, -1, "#E64B35",
+        "6_Accessible_Meth_LowRNA",
+        "6. Accessible methylated low RNA\nRNA↓ CpG↑ GpC↑",
+        -1, 1, 1, "#00A087",
+        "7_Closed_Unmeth_LowRNA",
+        "7. Closed unmethylated low RNA\nRNA↓ CpG↓ GpC↓",
+        -1, -1, -1, "#8491B4",
+        "8_Expressed_Meth_Closed",
+        "8. Expressed but meth / closed\nRNA↑ CpG↑ GpC↓",
+        1, 1, -1, "#7E6148",
+        "9_Weak_Intermediate",
+        "9. Weak / intermediate",
+        0, 0, 0, "#B09C85"
+      )
+    } else if (has_rna && has_cpg) {
+      # RNA + CpG
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "1_Expressed_Unmethylated",
+        "1. Expressed & unmethylated\nRNA↑ CpG↓",
+        1, -1, 0, "#DC0000",
+        "2_LowRNA_Methylated",
+        "2. Low RNA & methylated\nRNA↓ CpG↑",
+        -1, 1, 0, "#4DBBD5",
+        "3_Expressed_Methylated",
+        "3. Expressed despite methylation\nRNA↑ CpG↑",
+        1, 1, 0, "#F39B7F",
+        "4_LowRNA_Unmethylated",
+        "4. Low RNA but unmethylated\nRNA↓ CpG↓",
+        -1, -1, 0, "#3C5488",
+        "5_Weak_Intermediate",
+        "5. Weak / intermediate",
+        0, 0, 0, "#B09C85"
+      )
+    } else if (has_cpg && has_gpc) {
+      # CpG + GpC
+      # 注意：没有 RNA 时不要叫 active / silenced，改成 permissive / repressive
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "1_Open_Hypomethylated",
+        "1. Open & hypomethylated\nCpG↓ GpC↑",
+        0, -1, 1, "#DC0000",
+        "2_Closed_Methylated",
+        "2. Closed & methylated\nCpG↑ GpC↓",
+        0, 1, -1, "#4DBBD5",
+        "3_Open_Methylated",
+        "3. Open but methylated\nCpG↑ GpC↑",
+        0, 1, 1, "#F39B7F",
+        "4_Closed_Hypomethylated",
+        "4. Closed but hypomethylated\nCpG↓ GpC↓",
+        0, -1, -1, "#3C5488",
+        "5_Weak_Intermediate",
+        "5. Weak / intermediate",
+        0, 0, 0, "#B09C85"
+      )
+    } else if (has_rna && has_gpc) {
+      # RNA + GpC
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "1_Expressed_Open",
+        "1. Expressed & accessible\nRNA↑ GpC↑",
+        1, 0, 1, "#DC0000",
+        "2_LowRNA_Closed",
+        "2. Low RNA & closed\nRNA↓ GpC↓",
+        -1, 0, -1, "#4DBBD5",
+        "3_Expressed_Closed",
+        "3. Expressed but closed\nRNA↑ GpC↓",
+        1, 0, -1, "#F39B7F",
+        "4_LowRNA_Open",
+        "4. Low RNA but accessible\nRNA↓ GpC↑",
+        -1, 0, 1, "#3C5488",
+        "5_Weak_Intermediate",
+        "5. Weak / intermediate",
+        0, 0, 0, "#B09C85"
+      )
+    } else if (has_rna) {
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "1_High_RNA",
+        "1. High RNA\nRNA↑",
+        1, 0, 0, "#DC0000",
+        "2_Low_RNA",
+        "2. Low RNA\nRNA↓",
+        -1, 0, 0, "#4DBBD5",
+        "3_Weak_Intermediate",
+        "3. Weak / intermediate",
+        0, 0, 0, "#B09C85"
+      )
+    } else if (has_cpg) {
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "1_Hypomethylated",
+        "1. Hypomethylated\nCpG↓",
+        0, -1, 0, "#DC0000",
+        "2_Hypermethylated",
+        "2. Hypermethylated\nCpG↑",
+        0, 1, 0, "#4DBBD5",
+        "3_Weak_Intermediate",
+        "3. Weak / intermediate",
+        0, 0, 0, "#B09C85"
+      )
+    } else if (has_gpc) {
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "1_Open",
+        "1. Accessible / open\nGpC↑",
+        0, 0, 1, "#DC0000",
+        "2_Closed",
+        "2. Inaccessible / closed\nGpC↓",
+        0, 0, -1, "#4DBBD5",
+        "3_Weak_Intermediate",
+        "3. Weak / intermediate",
+        0, 0, 0, "#B09C85"
+      )
+    } else {
+      tibble::tribble(
+        ~Reg_State, ~State_Label, ~w_RNA, ~w_CpG, ~w_GpC, ~Color,
+        "No_Data", "No matched omic data", 0, 0, 0, "#B09C85"
+      )
+    }
+  }
+
+  .assign_signature_state <- function(data, sig_tbl, z_map,
+                                      min_cos = 0.60,
+                                      min_norm = 0.80) {
+    if (length(z_map) == 0) {
+      data$Reg_State <- factor("No_Data", levels = sig_tbl$Reg_State)
+      data$State_DMCS <- NA_real_
+      data$State_Cosine <- NA_real_
+      data$State_Z_Norm <- NA_real_
+      return(data)
+    }
+    Z <- as.matrix(data[, unname(z_map), drop = FALSE])
+    colnames(Z) <- names(z_map)
+    storage.mode(Z) <- "numeric"
+    complete_rows <- stats::complete.cases(Z)
+    row_norm <- sqrt(rowSums(Z^2, na.rm = FALSE))
+    weight_cols <- paste0("w_", names(z_map))
+    W_all <- as.matrix(sig_tbl[, weight_cols, drop = FALSE])
+    storage.mode(W_all) <- "numeric"
+    # zero-weight row is weak/intermediate, not used for projection
+    nonzero_sig <- rowSums(abs(W_all), na.rm = TRUE) > 0
+    sig_scored <- sig_tbl[nonzero_sig, , drop = FALSE]
+    W <- W_all[nonzero_sig, , drop = FALSE]
+    weak_state <- sig_tbl$Reg_State[!nonzero_sig][1]
+    if (is.na(weak_state) || length(weak_state) == 0) {
+      weak_state <- sig_tbl$Reg_State[nrow(sig_tbl)]
+    }
+    # projection score:
+    # score = Z dot W / sqrt(sum(W^2))
+    # cosine = score / ||Z||
+    w_norm <- sqrt(rowSums(W^2, na.rm = TRUE))
+    score_mat <- Z %*% t(W)
+    score_mat <- sweep(score_mat, 2, w_norm, "/")
+    cosine_mat <- sweep(score_mat, 1, row_norm, "/")
+    cosine_mat[!is.finite(cosine_mat)] <- NA_real_
+    best_idx <- apply(cosine_mat, 1, function(x) {
+      if (all(is.na(x))) {
+        return(NA_integer_)
+      } else {
+        return(which.max(x))
+      }
+    })
+    best_cos <- rep(NA_real_, nrow(data))
+    best_score <- rep(NA_real_, nrow(data))
+    valid_idx <- which(!is.na(best_idx))
+    if (length(valid_idx) > 0) {
+      best_cos[valid_idx] <- cosine_mat[cbind(valid_idx, best_idx[valid_idx])]
+      best_score[valid_idx] <- score_mat[cbind(valid_idx, best_idx[valid_idx])]
+    }
+    assigned_state <- rep(weak_state, nrow(data))
+    pass_filter <- complete_rows &
+      is.finite(row_norm) &
+      row_norm >= min_norm &
+      is.finite(best_cos) &
+      best_cos >= min_cos &
+      is.finite(best_score) &
+      best_score > 0
+    assigned_state[pass_filter] <- sig_scored$Reg_State[best_idx[pass_filter]]
+    data$Reg_State <- factor(assigned_state, levels = sig_tbl$Reg_State)
+    data$State_DMCS <- best_score
+    data$State_Cosine <- best_cos
+    data$State_Z_Norm <- row_norm
+    data
+  }
+
+  .read_multi_numeric <- function(id, default) {
+    value <- input[[id]]
+    if (is.null(value) || length(value) == 0) {
+      return(default)
+    }
+    value <- suppressWarnings(as.numeric(value[1]))
+    if (!is.finite(value)) {
+      return(default)
+    }
+    value
+  }
+
+  build_state_analysis <- function(df, state_min_cos = 0.60,
+                                   state_min_norm = 0.80,
+                                   state_label_cut = 0.03,
+                                   make_plot = TRUE) {
+    has_rna <- "RNA_Exp" %in% colnames(df)
+    has_cpg <- "CpG_level" %in% colnames(df)
+    has_gpc <- "GpC_level" %in% colnames(df)
+    if (sum(c(has_rna, has_cpg, has_gpc)) < 2) {
+      stop("Need at least 2 Omics layers for joint analysis.")
+    }
+    .robust_z <- function(x) {
+      x <- suppressWarnings(as.numeric(x))
+      if (all(is.na(x))) {
+        return(rep(NA_real_, length(x)))
+      }
+      med <- stats::median(x, na.rm = TRUE)
+      s <- stats::mad(
+        x,
+        center = med,
+        constant = 1.4826,
+        na.rm = TRUE
+      )
+      if (!is.finite(s) || s < sqrt(.Machine$double.eps)) {
+        s <- stats::sd(x, na.rm = TRUE)
+      }
+      if (!is.finite(s) || s < sqrt(.Machine$double.eps)) {
+        return(rep(0, length(x)))
+      }
+      (x - med) / s
+    }
+    .pick_z <- function(data, z_candidates, raw_col) {
+      z_col <- z_candidates[z_candidates %in% colnames(data)]
+      if (length(z_col) > 0) {
+        return(as.numeric(data[[z_col[1]]]))
+      }
+      if (!raw_col %in% colnames(data)) {
+        return(rep(NA_real_, nrow(data)))
+      }
+      .robust_z(data[[raw_col]])
+    }
+    if (has_rna) {
+      df$Z_RNA_state <- .pick_z(
+        df,
+        c("Z_RNA", "RNA_Z", "Z_RNA_Exp", "RNA_Exp_Z"),
+        "RNA_Exp"
+      )
+    }
+    if (has_cpg) {
+      df$Z_CpG_state <- .pick_z(
+        df,
+        c("Z_CpG", "CpG_Z", "Z_CpG_level", "CpG_level_Z"),
+        "CpG_level"
+      )
+    }
+    if (has_gpc) {
+      df$Z_GpC_state <- .pick_z(
+        df,
+        c("Z_GpC", "GpC_Z", "Z_GpC_level", "GpC_level_Z"),
+        "GpC_level"
+      )
+    }
+    sig_tbl <- .make_state_signatures(
+      has_rna = has_rna,
+      has_cpg = has_cpg,
+      has_gpc = has_gpc
+    )
+    z_map <- c()
+    if (has_rna) {
+      z_map <- c(z_map, RNA = "Z_RNA_state")
+    }
+
+    if (has_cpg) {
+      z_map <- c(z_map, CpG = "Z_CpG_state")
+    }
+    if (has_gpc) {
+      z_map <- c(z_map, GpC = "Z_GpC_state")
+    }
+    df_state <- .assign_signature_state(
+      data = df,
+      sig_tbl = sig_tbl,
+      z_map = z_map,
+      min_cos = state_min_cos,
+      min_norm = state_min_norm
+    )
+    state_summary <- df_state %>%
+      dplyr::count(Reg_State, name = "n", .drop = FALSE) %>%
+      dplyr::mutate(
+        Fraction = ifelse(
+          sum(n, na.rm = TRUE) > 0,
+          n / sum(n, na.rm = TRUE),
+          0
+        )
+      ) %>%
+      dplyr::left_join(
+        sig_tbl %>%
+          dplyr::select(Reg_State, State_Label, Color),
+        by = "Reg_State"
+      ) %>%
+      dplyr::filter(n > 0)
+    state_plot <- NULL
+    if (isTRUE(make_plot)) {
+      pal <- stats::setNames(sig_tbl$Color, sig_tbl$Reg_State)
+      state_labels <- stats::setNames(
+        sig_tbl$State_Label,
+        sig_tbl$Reg_State
+      )
+      plot_title <- dplyr::case_when(
+        has_rna && has_cpg && has_gpc ~
+          "Multi-omic Regulatory Signature States",
+        has_rna && has_cpg ~
+          "RNA-CpG Regulatory Signature States",
+        has_cpg && has_gpc ~
+          "CpG-GpC Epigenetic Signature States",
+        has_rna && has_gpc ~
+          "RNA-GpC Regulatory Signature States",
+        has_rna ~
+          "RNA Expression States",
+        has_cpg ~
+          "CpG Methylation States",
+        has_gpc ~
+          "GpC Accessibility States",
+        TRUE ~
+          "Regulatory States"
+      )
+      plot_subtitle <- paste0(
+        "Assigned by robust Z-score projection; ",
+        "min cosine >= ", state_min_cos,
+        ", ||Z|| >= ", state_min_norm
+      )
+      state_plot <- ggplot(
+        state_summary,
+        aes(x = 2, y = Fraction, fill = Reg_State)
+      ) +
+        geom_col(
+          color = "white",
+          linewidth = 0.8,
+          width = 1
+        ) +
+        coord_polar(theta = "y", start = 0) +
+        xlim(0.5, 2.5) +
+        scale_fill_manual(
+          values = pal,
+          labels = state_labels,
+          breaks = names(pal),
+          drop = FALSE
+        ) +
+        theme_void(base_size = 14) +
+        theme(
+          legend.position = "right",
+          legend.title = element_text(face = "bold"),
+          legend.text = element_text(size = 10),
+          plot.title = element_text(
+            face = "bold",
+            hjust = 0.5,
+            size = 17
+          ),
+          plot.subtitle = element_text(
+            hjust = 0.5,
+            size = 11,
+            color = "grey35"
+          )
+        ) +
+        labs(
+          title = plot_title,
+          subtitle = plot_subtitle,
+          fill = "Regulatory signature"
+        ) +
+        geom_text(
+          aes(
+            label = ifelse(
+              Fraction >= state_label_cut,
+              paste0(
+                scales::percent(Fraction, accuracy = 0.1),
+                "\nn=",
+                n
+              ),
+              ""
+            )
+          ),
+          position = position_stack(vjust = 0.5),
+          color = "white",
+          fontface = "bold",
+          size = 4.5
+        )
+    }
+    list(
+      df_state = df_state,
+      state_summary = state_summary,
+      states_plot = state_plot
+    )
+  }
 
   # --- 1. 智能数据路由 (UI 渲染) ---
   output$ui_multi_data_source <- renderUI({
@@ -5854,10 +6669,11 @@ server <- function(input, output, session) {
     }, error = function(e){ showNotification(paste("Topology Error:", e$message), type = "error") })
   })
 
-  output$plot_multi_topo <- renderPlot({ req(Multi_values$topo_plot); Multi_values$topo_plot })
+  output$plot_multi_topo <- renderPlot({
+    req(Multi_values$topo_plot); Multi_values$topo_plot })
 
-  # --- 4. 功能二 & 三：状态分类与 Z-score 驱动基因打分 ---
-  observeEvent(input$btn_run_states_heatmap, {
+  # --- 4. 功能二：状态分类与 Z-score 驱动基因打分 ---
+  observeEvent(input$btn_run_heatmap, {
     req(Multi_values$raw_data)
     df <- Multi_values$raw_data
     top_n <- input$num_top_genes
@@ -5877,154 +6693,236 @@ server <- function(input, output, session) {
     progress$set(message = "Calculating Epigenetic States...", value = 0.3)
     on.exit(progress$close())
     tryCatch({
-      # 1. 动态状态分类逻辑 (根据不同整合模式赋不同生物学意义)
-      if (has_rna && has_cpg && has_gpc) {
-        # 模式1: 3 组学经典 5 状态
-        med_rna <- median(df$RNA_Exp, na.rm = TRUE)
-        med_cpg <- median(df$CpG_level, na.rm = TRUE)
-        med_gpc <- median(df$GpC_level, na.rm = TRUE)
-        df_state <- df %>%
-          dplyr::mutate(Reg_State = dplyr::case_when(
-            RNA_Exp >= med_rna & CpG_level < med_cpg & GpC_level >= med_gpc ~ "1_Fully_Activated",
-            RNA_Exp < med_rna & CpG_level > med_cpg & GpC_level < med_gpc ~ "2_Fully_Silenced",
-            RNA_Exp > med_rna & CpG_level > med_cpg ~ "3_Paradox_Active",
-            RNA_Exp <= med_rna & CpG_level < med_cpg ~ "4_Poised_State",
-            TRUE ~ "5_Intermediate"
-          ))
-        pal <- c("1_Fully_Activated"="#DC0000", "2_Fully_Silenced"="#4DBBD5", "3_Paradox_Active"="#F39B7F", "4_Poised_State"="#3C5488", "5_Intermediate"="#B09C85")
-        state_labels <- c("1_Fully_Activated"="1. Fully Activated", "2_Fully_Silenced"="2. Fully Silenced", "3_Paradox_Active"="3. Paradox Active", "4_Poised_State"="4. Poised State", "5_Intermediate"="5. Intermediate")
-      } else if (has_rna && has_cpg) {
-        # 模式2: RNA + CpG (4 状态)
-        med_rna <- median(df$RNA_Exp, na.rm = TRUE)
-        med_cpg <- median(df$CpG_level, na.rm = TRUE)
-        df_state <- df %>%
-          dplyr::mutate(Reg_State = dplyr::case_when(
-            RNA_Exp >= med_rna & CpG_level < med_cpg ~ "1_Active_Unmethylated",
-            RNA_Exp < med_rna & CpG_level >= med_cpg ~ "2_Silenced_Methylated",
-            RNA_Exp >= med_rna & CpG_level >= med_cpg ~ "3_Paradox_Active",
-            RNA_Exp < med_rna & CpG_level < med_cpg ~ "4_Poised_Silenced"
-          ))
-        pal <- c("1_Active_Unmethylated"="#DC0000", "2_Silenced_Methylated"="#4DBBD5", "3_Paradox_Active"="#F39B7F", "4_Poised_Silenced"="#3C5488")
-        state_labels <- c("1_Active_Unmethylated"="1. Active & UnMeth", "2_Silenced_Methylated"="2. Silenced & Meth", "3_Paradox_Active"="3. Paradox Active", "4_Poised_Silenced"="4. Poised / Silenced")
-      } else if (has_cpg && has_gpc) {
-        # 模式3: CpG + GpC (4 状态)
-        med_cpg <- median(df$CpG_level, na.rm = TRUE)
-        med_gpc <- median(df$GpC_level, na.rm = TRUE)
-        df_state <- df %>%
-          dplyr::mutate(Reg_State = dplyr::case_when(
-            GpC_level >= med_gpc & CpG_level < med_cpg ~ "1_Accessible_Active",
-            GpC_level < med_gpc & CpG_level >= med_cpg ~ "2_Closed_Silenced",
-            GpC_level >= med_gpc & CpG_level >= med_cpg ~ "3_Accessible_Meth",
-            GpC_level < med_gpc & CpG_level < med_cpg ~ "4_Closed_Unmeth"
-          ))
-        pal <- c("1_Accessible_Active"="#DC0000", "2_Closed_Silenced"="#4DBBD5", "3_Accessible_Meth"="#F39B7F", "4_Closed_Unmeth"="#3C5488")
-        state_labels <- c("1_Accessible_Active"="1. Accessible & UnMeth", "2_Closed_Silenced"="2. Closed & Meth", "3_Accessible_Meth"="3. Accessible & Meth", "4_Closed_Unmeth"="4. Closed & UnMeth")
-      } else if (has_rna && has_gpc) {
-        # 【新增】模式4: RNA + GpC (4 状态)
-        med_rna <- median(df$RNA_Exp, na.rm = TRUE)
-        med_gpc <- median(df$GpC_level, na.rm = TRUE)
-        df_state <- df %>%
-          dplyr::mutate(Reg_State = dplyr::case_when(
-            RNA_Exp >= med_rna & GpC_level >= med_gpc ~ "1_Active_Accessible",
-            RNA_Exp < med_rna & GpC_level < med_gpc ~ "2_Silenced_Closed",
-            RNA_Exp >= med_rna & GpC_level < med_gpc ~ "3_Paradox_Active",
-            RNA_Exp < med_rna & GpC_level >= med_gpc ~ "4_Poised_Accessible"
-          ))
-        pal <- c("1_Active_Accessible"="#DC0000", "2_Silenced_Closed"="#4DBBD5", "3_Paradox_Active"="#F39B7F", "4_Poised_Accessible"="#3C5488")
-        state_labels <- c("1_Active_Accessible"="1. Active & Accessible", "2_Silenced_Closed"="2. Silenced & Closed", "3_Paradox_Active"="3. Paradox Active", "4_Poised_Accessible"="4. Poised & Accessible")
+      state_result <- build_state_analysis(
+        df = df,
+        state_min_cos = .read_multi_numeric(
+          "state_min_cos",
+          0.60
+        ),
+        state_min_norm = .read_multi_numeric(
+          "state_min_norm",
+          0.80
+        ),
+        state_label_cut = .read_multi_numeric(
+          "state_label_cut",
+          0.03
+        ),
+        make_plot = FALSE
+      )
+      df_state <- state_result$df_state
+      # 动态 Z-score 热图美化
+      progress$set(message = "Scoring candidate genes/loci by signature-specific DMCS...", value = 0.7)
+      avail_omics <- c()
+      if (has_rna) avail_omics <- c(avail_omics, "RNA_Exp")
+      if (has_cpg) avail_omics <- c(avail_omics, "CpG_level")
+      if (has_gpc) avail_omics <- c(avail_omics, "GpC_level")
+      keep_cols <- unique(c(
+        intersect(
+          c("Associated_Regions", "GeneID", "GeneName", "Reg_State"),
+          colnames(df_state)
+        ),
+        avail_omics
+      ))
+      df_clean <- df_state[, keep_cols, drop = FALSE]
+      # numeric conversion and completeness check
+      for (cc in avail_omics) {
+        df_clean[[cc]] <- suppressWarnings(as.numeric(df_clean[[cc]]))
       }
-      state_summary <- df_state %>% dplyr::count(Reg_State) %>% dplyr::mutate(Fraction = n / sum(n))
-      Multi_values$states_data <- state_summary
-      # 绘制状态饼图
-      Multi_values$states_plot <- ggplot(state_summary, aes(x = 2, y = Fraction, fill = Reg_State)) +
-        geom_bar(stat = "identity", color = "white", linewidth = 1) +
-        coord_polar(theta = "y", start = 0) +
-        xlim(0.5, 2.5) +
-        scale_fill_manual(values = pal, labels = state_labels) +
-        theme_void(base_size = 15) +
-        theme(
-          legend.position = "right",
-          legend.title = element_text(face = "bold"),
-          plot.title = element_text(face = "bold", hjust = 0.5, size = 18)
-        ) +
-        labs(title = "Epigenetic Regulatory States", fill = "States") +
-        geom_text(aes(label = ifelse(Fraction > 0.05, scales::percent(Fraction, accuracy = 0.1), "")),
-                  position = position_stack(vjust = 0.5), color = "white", fontface = "bold", size = 5)
-      # 2. 动态 Z-score 热图美化
-      progress$set(message = "Scoring Driver Genes...", value = 0.7)
-      df_clean <- na.omit(df[, req_cols])
-      # 定义稳健 Z-score 函数 (Robust Z-score based on Median and MAD)
-      # 并在最后限制在 [-3, 3] 以内，保证热图颜色映射不被异常值破坏
-      calc_robust_z <- function(x) {
-        med_val <- median(x, na.rm = TRUE)
-        mad_val <- mad(x, na.rm = TRUE)
-        if (!is.finite(mad_val) || mad_val < 1e-8) {
-          sd_val <- sd(x, na.rm = TRUE)
-          if (!is.finite(sd_val) || sd_val < 1e-8) {
-            return(rep(0, length(x)))
-          }
-          mad_val <- sd_val
+      df_clean <- df_clean[
+        stats::complete.cases(df_clean[, avail_omics, drop = FALSE]) &
+          !is.na(df_clean$GeneName) &
+          df_clean$GeneName != "",
+        ,
+        drop = FALSE
+      ]
+      if (nrow(df_clean) < 2) {
+        stop("Not enough complete features for DMCS ranking.")
+      }
+      # RNA expression should be normalized expression, not scale.data
+      if (has_rna && any(df_clean$RNA_Exp < 0, na.rm = TRUE)) {
+        stop(
+          "RNA_Exp contains negative values. ",
+          "Please use normalized expression, not scale.data."
+        )
+      }
+      heat_cols <- c()
+      heat_names <- c()
+      # RNA robust Z
+      if (has_rna) {
+        z_rna <- robust_z_pair(df_clean$RNA_Exp, clip = 3, transform = "none")
+        df_clean$Z_RNA_raw <- z_rna$raw
+        df_clean$Z_RNA <- z_rna$clipped
+        heat_cols <- c(heat_cols, "Z_RNA")
+        heat_names <- c(heat_names, "RNA robust Z")
+      }
+      # CpG robust Z
+      if (has_cpg) {
+        z_cpg <- robust_z_pair(df_clean$CpG_level, clip = 3, transform = "none")
+        df_clean$Z_CpG_raw <- z_cpg$raw
+        df_clean$Z_CpG <- z_cpg$clipped
+        heat_cols <- c(heat_cols, "Z_CpG")
+        heat_names <- c(heat_names, "CpG robust Z")
+      }
+      # GpC robust Z
+      if (has_gpc) {
+        z_gpc <- robust_z_pair(df_clean$GpC_level, clip = 3, transform = "none")
+        df_clean$Z_GpC_raw <- z_gpc$raw
+        df_clean$Z_GpC <- z_gpc$clipped
+        heat_cols <- c(heat_cols, "Z_GpC")
+        heat_names <- c(heat_names, "GpC robust Z")
+      }
+      # Use raw robust Z for ranking by default, clipped Z only for heatmap.
+      z_raw_cols <- paste0(heat_cols, "_raw")
+      z_rank_mat <- as.matrix(df_clean[, z_raw_cols, drop = FALSE])
+      colnames(z_rank_mat) <- heat_cols
+      rank_unclipped <- is.null(input$multi_rank_unclipped) ||
+        isTRUE(input$multi_rank_unclipped)
+      if (!rank_unclipped) {
+        z_rank_mat <- as.matrix(df_clean[, heat_cols, drop = FALSE])
+      }
+      # Build signature library based on available omics layers
+      signatures <- make_signature_library(heat_cols)
+      if (length(signatures) == 0) {
+        stop("No valid multi-omic signature is available for the selected omics layers.")
+      }
+      selected_signature <- input$multi_score_signature
+      if (is.null(selected_signature)) {
+        selected_signature <- "Canonical_active"
+      }
+      if (!identical(selected_signature, "Auto_best") &&
+          !selected_signature %in% names(signatures)) {
+        showNotification(
+          paste0(
+            "Selected signature is not compatible with the available omics layers. ",
+            "Using Canonical_active or the first available signature instead."
+          ),
+          type = "warning"
+        )
+        selected_signature <- if ("Canonical_active" %in% names(signatures)) {
+          "Canonical_active"
+        } else {
+          names(signatures)[1]
         }
-        z <- (x - med_val) / mad_val
-        # 极值截断处理 (Clipping)
-        z <- pmax(pmin(z, 3), -3)
-        return(z)
       }
-      # 计算 Z-score
-      if(has_rna) {
-        # RNA 必须先做 log2(x+1) 转换来消除长尾效应，再求稳健 Z-score
-        # df_clean$Z_RNA <- calc_robust_z(log2(df_clean$RNA_Exp + 1))
-        rna_values <- suppressWarnings(as.numeric(df_clean$RNA_Exp))
-        if (any(!is.finite(rna_values))) {
-          stop("RNA_Exp contains non-numeric or infinite values.")
-        }
-        if (any(rna_values < 0)) {
-          stop(
-            "RNA_Exp contains negative values. ",
-            "Please use normalized expression, not scale.data."
-          )
-        }
-        # RNA_Exp has already been normalized/log-transformed in Step 1.
-        # Do not apply log2() again here.
-        df_clean$Z_RNA <- calc_robust_z(rna_values)
+      # Calculate score and cosine for all compatible signatures
+      score_df <- as.data.frame(
+        lapply(signatures, function(w) {
+          project_signature(z_rank_mat, w)
+        })
+      )
+      cosine_df <- as.data.frame(
+        lapply(signatures, function(w) {
+          cosine_signature(z_rank_mat, w)
+        })
+      )
+      score_mat <- as.matrix(score_df)
+      cosine_mat <- as.matrix(cosine_df)
+      # Assign DMCS according to selected or auto-best signature
+      if (identical(selected_signature, "Auto_best")) {
+        best_idx <- max.col(score_mat, ties.method = "first")
+        df_clean$DMCS <- score_mat[
+          cbind(seq_len(nrow(score_mat)), best_idx)
+        ]
+        df_clean$DMCS_Cosine <- cosine_mat[
+          cbind(seq_len(nrow(cosine_mat)), best_idx)
+        ]
+        df_clean$DMCS_Pattern <- colnames(score_mat)[best_idx]
+      } else {
+        df_clean$DMCS <- score_mat[, selected_signature]
+        df_clean$DMCS_Cosine <- cosine_mat[, selected_signature]
+        df_clean$DMCS_Pattern <- selected_signature
       }
-      if(has_cpg) {
-        # Level 数据 (0-1) 直接求稳健 Z-score
-        df_clean$Z_CpG <- calc_robust_z(df_clean$CpG_level)
+      # Add all signature scores to downloadable table
+      score_df_prefixed <- score_df
+      colnames(score_df_prefixed) <- paste0("Score_", colnames(score_df_prefixed))
+      df_clean <- cbind(df_clean, score_df_prefixed)
+      # Overall signal magnitude and residual non-canonical component
+      norm2 <- rowSums(z_rank_mat^2)
+      df_clean$Signal_magnitude <- sqrt(norm2)
+      df_clean$Orthogonal_residual <- sqrt(
+        pmax(norm2 - df_clean$DMCS^2, 0)
+      )
+      df_clean$Pattern_fraction <- ifelse(
+        norm2 > 0,
+        pmin(df_clean$DMCS^2 / norm2, 1),
+        NA_real_
+      )
+      abs_z <- abs(z_rank_mat)
+      df_clean$Dominant_layer <- gsub(
+        "^Z_",
+        "",
+        colnames(abs_z)[max.col(abs_z, ties.method = "first")]
+      )
+      df_clean$DMCS_Interpretation <- dplyr::case_when(
+        df_clean$DMCS_Cosine >= 0.75 &
+          df_clean$Signal_magnitude >= 1 ~ "strong selected-pattern concordance",
+        df_clean$DMCS_Cosine >= 0.40 ~ "partial selected-pattern match",
+        df_clean$Orthogonal_residual > abs(df_clean$DMCS) ~ "non-canonical or discordant signal",
+        TRUE ~ "weak or single-layer dominated signal"
+      )
+      # Optional empirical P/FDR by modality permutation
+      B_perm <- if (is.null(input$dmcs_perm_n)) 0 else input$dmcs_perm_n
+      p_emp <- empirical_signature_p(
+        z_mat = z_rank_mat,
+        signatures = signatures,
+        observed = df_clean$DMCS,
+        selected_signature = selected_signature,
+        B = B_perm,
+        seed = 123
+      )
+      df_clean$DMCS_empirical_P <- p_emp
+      df_clean$DMCS_empirical_FDR <- if (all(is.na(p_emp))) {
+        NA_real_
+      } else {
+        stats::p.adjust(p_emp, method = "BH")
       }
-      if(has_gpc) {
-        df_clean$Z_GpC <- calc_robust_z(df_clean$GpC_level)
+      # Ranking metric
+      rank_metric <- input$multi_rank_metric
+      if (is.null(rank_metric)) {
+        rank_metric <- "DMCS"
       }
-      # 动态计算综合打分 (MultiOmic_Score)
-      if (has_rna && has_cpg && has_gpc) {
-        # 经过同尺度 Robust 标准化后，可以直接加减
-        df_clean$MultiOmic_Score <- df_clean$Z_RNA + df_clean$Z_GpC - df_clean$Z_CpG
-        heat_cols <- c("Z_RNA", "Z_GpC", "Z_CpG")
-        heat_names <- c("RNA (Normalized)", "GpC (Acc)", "CpG (Meth)")
-      } else if (has_rna && has_cpg) {
-        df_clean$MultiOmic_Score <- df_clean$Z_RNA - df_clean$Z_CpG
-        heat_cols <- c("Z_RNA", "Z_CpG")
-        heat_names <- c("RNA (Normalized)", "CpG (Meth)")
-      } else if (has_cpg && has_gpc) {
-        df_clean$MultiOmic_Score <- df_clean$Z_GpC - df_clean$Z_CpG
-        heat_cols <- c("Z_GpC", "Z_CpG")
-        heat_names <- c("GpC (Acc)", "CpG (Meth)")
-      } else if (has_rna && has_gpc) {
-        df_clean$MultiOmic_Score <- df_clean$Z_RNA + df_clean$Z_GpC
-        heat_cols <- c("Z_RNA", "Z_GpC")
-        heat_names <- c("RNA (Normalized)", "GpC (Acc)")
-      }
-      # 筛选 Top N Driver Genes
+      df_clean$Rank_Value <- switch(
+        rank_metric,
+        "Residual" = df_clean$Orthogonal_residual,
+        "Magnitude" = df_clean$Signal_magnitude,
+        df_clean$DMCS
+      )
       top_genes <- df_clean %>%
-        dplyr::arrange(desc(MultiOmic_Score)) %>%
+        dplyr::arrange(
+          dplyr::desc(Rank_Value),
+          dplyr::desc(DMCS_Cosine)
+        ) %>%
         utils::head(top_n)
-      heat_mat <- as.matrix(top_genes[, heat_cols])
-      rownames(heat_mat) <- top_genes$GeneName
+      # Heatmap uses clipped robust Z values
+      heat_mat <- as.matrix(top_genes[, heat_cols, drop = FALSE])
       colnames(heat_mat) <- heat_names
+      gene_labels <- make.unique(as.character(top_genes$GeneName))
+      rownames(heat_mat) <- gene_labels
       my_breaks <- seq(-3, 3, length.out = 101)
-      my_colors <- colorRampPalette(c("#3C5488", "white", "#E64B35"))(100)
-      dynamic_fontsize <- ifelse(top_n <= 50, 10, ifelse(top_n <= 100, 8, 5))
+      my_colors <- colorRampPalette(
+        c("#3C5488", "white", "#E64B35")
+      )(100)
+      dynamic_fontsize <- ifelse(
+        top_n <= 50,
+        10,
+        ifelse(top_n <= 100, 8, 5)
+      )
+      annotation_row <- data.frame(
+        Signature = top_genes$DMCS_Pattern,
+        State = top_genes$Reg_State,
+        Interpretation = top_genes$DMCS_Interpretation,
+        stringsAsFactors = FALSE
+      )
+      rownames(annotation_row) <- rownames(heat_mat)
       Multi_values$heatmap_data <- top_genes
+      heatmap_title <- paste0(
+        "Top ",
+        nrow(top_genes),
+        " Ranked Genes by ",
+        rank_metric,
+        " | Signature: ",
+        selected_signature
+      )
       Multi_values$heatmap_plot <- pheatmap::pheatmap(
         heat_mat,
         cluster_cols = FALSE,
@@ -6032,38 +6930,92 @@ server <- function(input, output, session) {
         scale = "none",
         color = my_colors,
         breaks = my_breaks,
-        main = paste("Top", top_n, "Driver Genes by Joint Score"),
+        main = heatmap_title,
         fontsize_row = dynamic_fontsize,
         fontsize_col = 12,
         border_color = ifelse(top_n <= 80, "grey90", NA),
         angle_col = 45,
         treeheight_row = 30,
+        annotation_row = annotation_row,
         silent = TRUE
       )
-      showNotification("States & Heatmap calculated successfully!", type = "message")
+      showNotification("Heatmap calculated successfully!", type = "message")
       updateTabsetPanel(session, inputId = "multi_result_tabset", selected = "tab_heatmap")
     }, error = function(e){ showNotification(paste("Error:", e$message), type = "error") })
   })
 
-  output$plot_multi_states <- renderPlot({ req(Multi_values$states_plot); Multi_values$states_plot })
-  output$plot_multi_heatmap <- renderPlot({ req(Multi_values$heatmap_plot); grid::grid.draw(Multi_values$heatmap_plot$gtable) })
+  # --- 4. 功能三：Z-score 驱动基因打分
+  observeEvent(input$btn_run_states,{
+    req(Multi_values$raw_data)
+    progress <- shiny::Progress$new()
+    progress$set(
+      message = "Calculating Regulatory States...",
+      value = 0.3
+    )
+    on.exit(progress$close(), add = TRUE)
+    tryCatch({
+      result <- build_state_analysis(
+        df = Multi_values$raw_data,
+        state_min_cos = .read_multi_numeric(
+          "state_min_cos",
+          0.60
+        ),
+        state_min_norm = .read_multi_numeric(
+          "state_min_norm",
+          0.80
+        ),
+        state_label_cut = .read_multi_numeric(
+          "state_label_cut",
+          0.03
+        ),
+        make_plot = TRUE
+      )
+      Multi_values$states_gene_data <- result$df_state
+      Multi_values$states_data <- result$state_summary
+      Multi_values$states_plot <- result$states_plot
+      showNotification(
+        "Regulatory States generated successfully!",
+        type = "message"
+      )
+      updateTabsetPanel(
+        session,
+        inputId = "multi_result_tabset",
+        selected = "tab_states"
+      )
+    }, error = function(e) {
+      showNotification(
+        paste("Regulatory States Error:", e$message),
+        type = "error"
+      )
+    })
+  },
+  ignoreInit = TRUE
+  )
+
+  output$plot_multi_states <- renderPlot({
+    req(Multi_values$states_plot); Multi_values$states_plot })
+  output$plot_multi_heatmap <- renderPlot({
+    req(Multi_values$heatmap_plot); grid::grid.draw(Multi_values$heatmap_plot$gtable) })
   # --- 5. 新增：全局下载功能 (Export-ready) ---
   output$dl_topo_pdf <- downloadHandler(
-    filename = function() { paste0("Topology_Map_", input$topo_chr, "_", Sys.Date(), ".pdf") },
+    filename = function() {
+      paste0("Topology_Map_", input$topo_chr, "_", Sys.Date(), ".pdf") },
     content = function(file) {
       req(Multi_values$topo_plot)
       ggsave(file, plot = Multi_values$topo_plot, width = 10, height = 7, device = "pdf")
     }
   )
   output$dl_states_pdf <- downloadHandler(
-    filename = function() { paste0("Regulatory_States_", Sys.Date(), ".pdf") },
+    filename = function() {
+      paste0("Regulatory_States_", Sys.Date(), ".pdf") },
     content = function(file) {
       req(Multi_values$states_plot)
       ggsave(file, plot = Multi_values$states_plot, width = 8, height = 6, device = "pdf")
     }
   )
   output$dl_heatmap_pdf <- downloadHandler(
-    filename = function() { paste0("Driver_Genes_Heatmap_Top", input$num_top_genes, "_", Sys.Date(), ".pdf") },
+    filename = function() {
+      paste0("Driver_Genes_Heatmap_Top", input$num_top_genes, "_", Sys.Date(), ".pdf") },
     content = function(file) {
       req(Multi_values$heatmap_plot)
       # 对于 pheatmap，使用 pdf() 设备包裹输出 gtable
@@ -6073,21 +7025,24 @@ server <- function(input, output, session) {
     }
   )
   output$dl_topo_data <- downloadHandler(
-    filename = function() { paste0("Topology_Data_", input$topo_chr, "_", Sys.Date(), ".csv") },
+    filename = function() {
+      paste0("Topology_Data_", input$topo_chr, "_", Sys.Date(), ".csv") },
     content = function(file) {
       req(Multi_values$topo_data)
       data.table::fwrite(Multi_values$topo_data, file, row.names = FALSE)
     }
   )
   output$dl_states_data <- downloadHandler(
-    filename = function() { paste0("Regulatory_States_Summary_", Sys.Date(), ".csv") },
+    filename = function() {
+      paste0("Regulatory_States_Summary_", Sys.Date(), ".csv") },
     content = function(file) {
       req(Multi_values$states_data)
       data.table::fwrite(Multi_values$states_data, file, row.names = FALSE)
     }
   )
   output$dl_heatmap_data <- downloadHandler(
-    filename = function() { paste0("Top_Driver_Genes_ZScores_", Sys.Date(), ".csv") },
+    filename = function() {
+      paste0("Top_Driver_Genes_ZScores_", Sys.Date(), ".csv") },
     content = function(file) {
       req(Multi_values$heatmap_data)
       data.table::fwrite(Multi_values$heatmap_data, file, row.names = FALSE)
@@ -6104,18 +7059,22 @@ server <- function(input, output, session) {
     Multi_values$heatmap_data <- NULL
     Multi_values$unlink_step1 <- TRUE
     Multi_values$raw_data <- NULL
+    Multi_values$states_gene_data <- NULL
     # 2. 强制清空前端的输入控件 (需要库 shinyjs)
     shinyjs::reset("multi_upload_file")  # 清空手动上传的 CSV 文件
     shinyjs::reset("num_top_genes")      # 恢复 Top N 驱动基因的默认值 (40)
     shinyjs::reset("topo_chr")           # 恢复染色体选择器的默认状态
     shinyjs::reset("topo_gene")
+    shinyjs::reset("state_min_cos")
+    shinyjs::reset("state_min_norm")
+    shinyjs::reset("state_label_cut")
     # 3. 弹出系统级反馈
     showNotification("Multi-omics analysis data and plots have been fully cleared!",
                      type = "warning", duration = 5)
   })
 
 
-  # ---- Enrichment Analysis Logic (Fixed & Enhanced) ----
+  # ---- Enrichment Analysis Logic (Fixed) ----
   library(clusterProfiler)
   library(org.Mm.eg.db)
   library(org.Hs.eg.db)
