@@ -481,7 +481,7 @@ ui <- shinydashboardPlus::dashboardPage(
             fluidRow(
               column(width = 3,
                      box(
-                       title = span(icon("database"), " 1. Data Import & Object Creation"), width = NULL, status = "primary", solidHeader = TRUE,
+                       title = span(icon("database"), " Data Import & Object Creation"), width = NULL, status = "primary", solidHeader = TRUE,
                        h5(tags$b("Step 1: Expression Matrix"), style = "color: #2c3e50;"),
                        fileInput("RNA_data_input1", "Upload Matrix (CSV/TXT/H5):", accept = c(".csv", ".txt", ".tsv", ".h5", ".hdf5")),
                        uiOutput("rna_id_selector_ui"),
@@ -827,9 +827,9 @@ ui <- shinydashboardPlus::dashboardPage(
                                         icon = icon("layer-group"), class = "btn-info",
                                         style = "flex: 2; font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"),
                            # 【新增】：Stop 按钮，默认隐藏 (display: none)
-                           actionButton("btn_stop_aggregate", " Stop & Reset",
-                                        icon = icon("stop-circle"), class = "btn-danger",
-                                        style = "display: none; flex: 2; font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"),
+                           # actionButton("btn_stop_aggregate", " Stop & Reset",
+                           #              icon = icon("stop-circle"), class = "btn-danger",
+                           #              style = "display: none; flex: 2; font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"),
                            # 原有的 Reset 按钮
                            actionButton("btn_reset_epi_assembly", " Reset & Clear",
                                         icon = icon("trash-alt"), class = "btn-warning",
@@ -997,9 +997,90 @@ ui <- shinydashboardPlus::dashboardPage(
                      )
               )
             )
+          ),
+          ## ATAC Format Converter ----
+          tabPanel(
+            title = "4. ATAC Format Converter",
+            value = "tab_epi_atac_convert",
+            br(),
+            fluidRow(
+              # 左侧：输入和按钮
+              column(
+                width = 3,
+                box(
+                  title = tagList(icon("upload"), " Input & Convert"),
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = NULL,
+                  # 文件上传组件
+                  fileInput(
+                    "atac_h5_file", "Upload scATAC-seq H5 file",
+                    accept = c(".h5", ".hdf5")
+                  ),
+                  # 将转换和重置按钮并排放在一行
+                  fluidRow(
+                    column(
+                      width = 6,
+                      actionButton(
+                        "btn_convert_atac", "Convert",
+                        icon = icon("exchange-alt"), class = "btn-info",
+                        style = "font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);",
+                        width = "100%"
+                      )
+                    ),
+                    column(
+                      width = 6,
+                      actionButton(
+                        "btn_reset_atac", "Reset",
+                        icon = icon("trash-alt"), class = "btn-warning",
+                        style = "font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);",
+                        width = "100%"
+                      )
+                    )
+                  )
+                )
+              ),
+              # 右侧：展示转换后的数据
+              column(
+                width = 9,
+                box(
+                  title = tagList(icon("table"), " Converted .level Matrix Preview"),
+                  status = "success",
+                  solidHeader = F,
+                  width = NULL,
+                  p(
+                    "Preview of converted binary accessibility matrix. ",
+                    "Only the first rows and columns are displayed for large sparse matrices."
+                  ),
+                  DT::DTOutput("atac_level_preview"),
+                  br(),
+                  fluidRow(
+                    column(
+                      width = 6,
+                      # downloadButton(
+                      #   "download_atac_csv",
+                      #   "Download CSV Matrix",
+                      #   icon = icon("download"),
+                      #   class = "btn-primary",
+                      #   width = "100%"
+                      # )
+                      uiOutput("atac_download_ui")
+                    )
+                  )
+                )
+                # box(
+                #   title = tagList(icon("info-circle"), " Conversion Summary"),
+                #   status = "info",
+                #   solidHeader = TRUE,
+                #   width = NULL,
+                #   verbatimTextOutput("atac_convert_info")
+                # )
+              )
+            )
           )
         )
       ),
+
       # Tab 4: Integration Analysis ----
       tabItem(
         tabName = "Integration_Analysis",
@@ -1442,112 +1523,303 @@ ui <- shinydashboardPlus::dashboardPage(
         tabName = "User_Guide",
         div(class = "module-header",
             h2(icon("book"), " scMATE User Manual"),
-            p("Comprehensive step-by-step instructions and data format guidelines for all modules.")
+            p("Comprehensive step-by-step instructions, data format guidelines, and troubleshooting for all modules.")
         ),
         fluidRow(
           column(12,
                  box(
-                   title = "Platform Documentation", status = "primary", solidHeader = T, width = 12,
+                   title = "Platform Documentation", status = "info", solidHeader = T, width = 12,
                    # 使用 tabsetPanel 分模块展示 Markdown 说明
                    tabsetPanel(
-                     # 1. 概述与数据准备
+                     # 1. Quick Start
                      tabPanel(
-                       title = "1. Data Preparation", icon = icon("file-alt"),
+                       title = "1. Quick Start", icon = icon("rocket"),
                        br(),
                        markdown("
-                       ### Welcome to scMATE
-                       scMATE is designed for seamless, zero-code analysis of single-cell Multi-omics data. Before starting, please ensure your data matches the required formats.
-                       #### 📁 Required Data Formats
-                       - **Transcriptome Matrix (scRNA-seq):**
-                       - Format: `.csv`, `.txt`, or pre-built `.rds` object.
-                       - Structure: Rows must be **Gene Symbols/IDs**, Columns must be **Cell Barcodes**.
-                       - **Epigenome Data (CpG/GpC):**
-                       - Raw Bismark format: `.cov` or `.cov.gz` files containing methylation signals.
-                       - Genomic Intervals: A `.bed` or `.csv` file with at least 3 columns (`chr`, `start`, `end`).
-                       - **Metadata:**
-                       - Format: `.csv` or `.xlsx`.
-                       - Must contain a column linking to the Cell IDs in your matrices.
-                      > **💡 Pro Tip:** For large datasets (>50k cells), we recommend uploading pre-processed `.rds` files to save browser memory and upload time.
+                       ### Getting Started with scMATE
+                       scMATE is a zero-code, interactive web platform for single-cell multi-omics analysis. Follow this quick guide to run your first analysis in minutes.
+
+                       #### Step 1: Prepare Your Data
+                       Ensure your data files match the required formats (see the *Data Preparation* tab for full details):
+                       - **Transcriptome:** Gene x Cell count matrix (`.csv`, `.txt`, `.h5`, or `.rds`)
+                       - **Epigenome:** Bismark `.cov` files + genomic interval `.bed` file
+                       - **Metadata:** Cell annotation table (`.csv` or `.xlsx`)
+
+                       #### Step 2: Choose a Module
+                       Navigate using the left sidebar:
+                       - **Transcriptome Module** — scRNA-seq QC, clustering, DEA, and pseudotime
+                       - **Epigenome Module** — scNOMe-seq methylation/accessibility analysis
+                       - **Multi-omics Integration** — Cross-modal integration and pathway enrichment
+
+                       #### Step 3: Upload and Run
+                       1. Upload your data files in the first sub-tab of each module.
+                       2. Configure parameters in the left control panel.
+                       3. Click the **Run / Build** button to execute.
+                       4. View results in the right panel and download using the Export buttons.
+
+                       #### Step 4: Interpret and Export
+                       - All tables support interactive sorting, filtering, and search.
+                       - Plots are rendered at publication quality and can be downloaded.
+                       - Use the *Enrichment Analysis* tab in the Integration module to map driver genes to GO/KEGG pathways.
+
+                       > **💡 Tip:** Click the *Launch Analysis* button on the Home page to jump directly to the Transcriptome module.
                        ")
                      ),
-                     # 2. 转录组模块说明
+                     # 2. Data Preparation
                      tabPanel(
-                       title = "2. Transcriptome Module", icon = icon("microscope"),
+                       title = "2. Data Preparation", icon = icon("file-alt"),
+                       br(),
+                       markdown("
+                       ### Data Format Requirements
+                       Before starting, please ensure your data matches the required formats for each omics layer.
+
+                       #### 📁 Transcriptome Matrix (scRNA-seq)
+                       - **Supported formats:** `.csv`, `.txt`, `.tsv`, `.h5` (10X CellRanger), or pre-built `.rds` object.
+                       - **Structure:** Rows = **Gene Symbols / Ensembl IDs**, Columns = **Cell Barcodes**.
+                       - **Gene ID column:** The first column or a column named `gene_name`, `gene_symbol`, `Symbol`, `gene_id`, or `GeneID` is auto-detected.
+                       - **Optional gene lengths:** A column named `length` will be automatically extracted for normalization.
+                       - **Values:** Raw integer UMI counts (recommended). Normalized values are also accepted.
+
+                       #### 📁 Epigenome Data (CpG / GpC)
+                       - **Raw methylation files:** Bismark `.cov` or `.cov.gz` files (one per cell).
+                         - Columns: `chr`, `start`, `end`, `meth%`, `count_meth`, `count_unmeth`.
+                       - **Genomic intervals:** A `.bed` or `.csv` file with at least 3 columns (`chr`, `start`, `end`).
+                         - Used to aggregate cytosine signals into promoter / gene-body / enhancer regions.
+                       - **ATAC-seq input:** 10X scATAC-seq `.h5` files can be converted via the *ATAC Format Converter* sub-tab.
+
+                       #### 📁 Metadata
+                       - **Supported formats:** `.csv` or `.xlsx` (Excel).
+                       - **Required:** A column containing Cell IDs that match the column names of your count matrix.
+                       - **Group columns:** Any columns defining cell types, conditions, batches, or clusters.
+                       - **Epigenome metadata:** Must contain `.level`, `.meth`, and `.nonmeth` columns for differential analysis.
+
+                       #### 📁 Integration Annotations
+                       - **Gene annotation file:** Maps genomic regions to gene promoters / bodies (`.bed` or `.csv`).
+                       - **Target group name:** Must exactly match the group label in metadata across all omics layers.
+
+                       #### ⚡ Performance Recommendations
+                       - **Datasets > 50k cells:** Upload pre-processed `.rds` sparse matrices (`dgCMatrix`) to reduce memory usage and upload time.
+                       - **Large `.cov` batches:** Use the multi-threading option in the Epigenome module to speed up aggregation.
+                       - **Browser memory:** Close other browser tabs during large analyses; scMATE automatically releases memory on session end.
+
+                       > **⚠️ Note:** The maximum upload size is 500 MB per file. For larger datasets, split matrices or use `.rds` sparse format.
+                       ")
+                     ),
+                     # 3. Transcriptome Module
+                     tabPanel(
+                       title = "3. Transcriptome Module", icon = icon("microscope"),
                        br(),
                        markdown("
                        ### Transcriptome Analysis Pipeline
-                       This module processes scRNA-seq data from raw counts to developmental trajectories.
+                       This module processes scRNA-seq data from raw counts to developmental trajectories. It contains 4 sequential sub-tabs.
 
-                       #### Step 1: Create Object & QC
-                       1. Upload your Raw Count Matrix and (optional) Metadata.
-                       2. Select the correct **Gene ID Column**.
-                       3. Use the **Pre-filter** to remove genes/cells with extreme sparsity.
-                       4. Click **Build Object**.
-                       5. Switch to the *QC & Filter* panel, select the mitochondrial prefix (e.g., `^MT-`), and apply strict thresholds to remove dead cells/doublets.
+                       ---
 
-                       #### Step 2: Dimension Reduction & Clustering
-                       1. Choose a Data Layer (Normalized/Scaled).
-                       2. Select your algorithm: **PCA**, **t-SNE**, or **UMAP**.
-                       3. *Optional:* Check **Perform Auto-Clustering** to run Leiden/Hierarchical clustering.
+                       #### Sub-tab 1: Create Object and QC
+                       **Purpose:** Build the analysis object and perform quality control filtering.
 
-                       #### Step 3: Differential Gene Analysis (DEA)
-                       1. Choose comparison mode: **One vs Rest** (find cluster markers) or **One vs One**.
-                       2. Set Log2FC and P-value thresholds.
-                       3. The platform will automatically compute the statistics using a highly optimized Wilcoxon rank-sum engine and output an interactive Volcano Plot.
+                       **Steps:**
+                       1. Upload your Raw Count Matrix (`.csv`, `.txt`, `.h5`, or `.rds`).
+                       2. Upload optional Metadata (`.csv` / `.xlsx`) and select the Cell ID column.
+                       3. Confirm the **Gene ID Column** (auto-detected from common column names).
+                       4. Set **Pre-filter** thresholds to remove genes / cells with extreme sparsity.
+                       5. Click **Build Object** to create the internal `sciET` object.
+                       6. Switch to the *QC and Filter* panel:
+                          - Set the mitochondrial gene prefix (e.g., `^MT-` for human, `^mt-` for mouse).
+                          - Adjust nCount, nFeature, and mitochondrial ratio thresholds.
+                          - Apply filters to remove dead cells and doublets.
 
-                       #### Step 4: Pseudotime Inference
-                       1. Select the dimension reduction embedding (e.g., UMAP).
-                       2. Specify the **Starting Cluster (Root)**.
-                       3. The module uses `princurve` (Cluster-based) or `Monocle-style K-NN` (Graph-based) to infer developmental trajectories.
+                       **Key outputs:** QC violin plots, filtered count matrix, metadata summary.
+
+                       ---
+
+                       #### Sub-tab 2: Dimension Reduction and Clustering
+                       **Purpose:** Visualize cellular heterogeneity and identify cell subpopulations.
+
+                       **Steps:**
+                       1. Choose a **Data Layer** (Normalized or Scaled).
+                       2. Select a dimension reduction algorithm:
+                          - **PCA** — Linear dimensionality reduction (fast, recommended first step).
+                          - **t-SNE** — Non-linear embedding for visualization.
+                          - **UMAP** — Non-linear embedding preserving global structure (recommended).
+                       3. Set the number of dimensions / perplexity / neighbors as needed.
+                       4. *(Optional)* Check **Perform Auto-Clustering** to run Leiden or Hierarchical clustering.
+                       5. Color cells by metadata groups or gene expression using the plot controls.
+
+                       **Key outputs:** 2D embedding scatter plots, cluster assignments.
+
+                       ---
+
+                       #### Sub-tab 3: Differential Gene Analysis (DEA)
+                       **Purpose:** Find marker genes or differentially expressed genes between groups.
+
+                       **Steps:**
+                       1. Choose a **comparison mode**:
+                          - **One vs Rest** — Find cluster-specific markers (each cluster vs all others).
+                          - **One vs One** — Compare two selected groups directly.
+                       2. Select the groups to compare from the dropdown menus.
+                       3. Set **Log2FC** and **P-value / adjusted P-value** thresholds.
+                       4. Click **Run DEA** — the platform uses an optimized Wilcoxon rank-sum test.
+                       5. Explore results in the interactive table and Volcano Plot.
+
+                       **Key outputs:** DEA result table (gene, log2FC, p-value, adj.p-val), Volcano Plot, downloadable CSV.
+
+                       ---
+
+                       #### Sub-tab 4: Pseudotime Analysis
+                       **Purpose:** Infer developmental trajectories and order cells along a pseudotime axis.
+
+                       **Steps:**
+                       1. Select a dimension reduction embedding (e.g., UMAP or PCA) as the basis.
+                       2. Specify the **Starting Cluster (Root)** — the cell type at the beginning of the trajectory.
+                       3. Choose a trajectory method:
+                          - **Cluster-based (`princurve`)** — Fits principal curves through cluster centroids.
+                          - **Graph-based (Monocle-style K-NN)** — Builds a K-nearest-neighbor graph.
+                       4. Click **Run Trajectory** to compute pseudotime values.
+                       5. Visualize cells colored by pseudotime or by gene expression along the trajectory.
+
+                       **Key outputs:** Pseudotime-ordered cell plot, gene expression trends along pseudotime.
+
+                       > **💡 Best Practice:** Always run QC and Dimension Reduction before DEA or Pseudotime, as downstream steps depend on filtered data and embeddings.
                        ")
                      ),
-
-                     # 3. 表观组模块说明
+                     # 4. Epigenome Module
                      tabPanel(
-                       title = "3. Epigenome Module", icon = icon("align-left"),
+                       title = "4. Epigenome Module", icon = icon("align-left"),
                        br(),
                        markdown("
                        ### Epigenome Analysis Pipeline (scNOMe-seq)
-                       This module handles ultra-sparse single-cell methylation and accessibility data.
-                       #### Step 1: Matrix Assembly & QC
-                       1. Upload multiple `.cov` files and your target `.bed` regions.
-                       2. Set the number of **CPU Threads** based on your server capacity.
-                       3. Click **Run Aggregation** (scMATE uses non-equi joins to quickly map signals).
-                       4. Apply row/column QC to filter out regions with too many NAs.
+                       This module handles ultra-sparse single-cell methylation (CpG) and chromatin accessibility (GpC) data. It contains 4 sub-tabs.
 
-                       #### Step 2: Dimension Reduction & Landscape
-                       1. Upload Metadata and link the sample IDs.
-                       2. Choose an Imputation method (KNN is highly recommended for dropouts).
-                       3. Generate the **Epigenetic Landscape (Ridge Plot)** to view global methylation density.
-                       4. Run manifold learning (PCA/UMAP/NMF) to find epigenetic substructures.
+                       ---
 
-                       #### Step 3: Differential Region Analysis
-                       1. Select the Target Group (Case) and Control Group.
-                       2. Ensure you correctly map the `.level`, `.meth`, and `.nonmeth` columns from the metadata.
-                       3. The module applies a **Dual-test framework** (Fisher's Exact Test + Variance Test) to strictly define Differentially Methylated/Accessible Regions (DMRs/DARs).
+                       #### Sub-tab 1: Matrix Assembly and QC
+                       **Purpose:** Aggregate raw cytosine signals into region-level matrices and perform QC.
+
+                       **Steps:**
+                       1. Upload multiple `.cov` / `.cov.gz` files (one per cell) via the multi-file uploader.
+                       2. Upload your target genomic regions `.bed` file (chr, start, end).
+                       3. Set the number of **CPU Threads** based on your server capacity.
+                       4. Click **Run Aggregation** — scMATE uses non-equi joins to rapidly map cytosine signals to regions.
+                       5. Apply **row / column QC** to filter out regions or cells with too many missing values (NAs).
+
+                       **Key outputs:** Aggregated methylation / accessibility matrix, QC summary plots.
+
+                       ---
+
+                       #### Sub-tab 2: Dimension Reduction
+                       **Purpose:** Impute sparse data and visualize epigenetic substructures.
+
+                       **Steps:**
+                       1. Upload Metadata and link the sample / cell IDs.
+                       2. Choose an **Imputation method**:
+                          - **KNN Imputation** — Highly recommended for dropout recovery in sparse epigenetic data.
+                          - **None** — Use raw aggregated values (not recommended for sparse data).
+                       3. **Epigenetic Landscape (Ridge Plot):** View global methylation / accessibility density distributions across groups.
+                       4. **Dimension Reduction:** Run PCA, UMAP, or NMF to identify epigenetic subpopulations.
+                       5. Color cells by metadata groups or by region-level signal values.
+
+                       **Key outputs:** Ridge density plots, PCA / UMAP / NMF embeddings, imputed matrix.
+
+                       ---
+
+                       #### Sub-tab 3: Differential Region Analysis
+                       **Purpose:** Identify Differentially Methylated Regions (DMRs) and Differentially Accessible Regions (DARs).
+
+                       **Steps:**
+                       1. Upload Metadata and ensure it contains `.level`, `.meth`, and `.nonmeth` columns.
+                       2. Select the **Target Group (Case)** and **Control Group** from the dropdown.
+                       3. Confirm the column mappings for `.level` (region ID), `.meth` (methylated counts), and `.nonmeth` (unmethylated counts).
+                       4. Click **Run Differential Analysis** — scMATE applies a **Dual-test framework**:
+                          - **Fisher's Exact Test** — Tests for mean methylation level differences.
+                          - **Variance Test** — Tests for dispersion differences between groups.
+                       5. Explore significant DMRs / DARs in the result table and volcano / scatter plots.
+
+                       **Key outputs:** DMR / DAR result table with p-values and effect sizes, diagnostic plots.
+
+                       ---
+
+                       #### Sub-tab 4: ATAC Format Converter
+                       **Purpose:** Convert 10X scATAC-seq peak-by-cell matrices into scMATE-compatible binary accessibility format.
+
+                       **Steps:**
+                       1. Upload a 10X scATAC-seq `.h5` file containing the peak count matrix.
+                       2. Click **Convert** to transform the matrix into a binary `.level` accessibility matrix.
+                       3. Preview the converted matrix in the right panel (first rows / columns shown for large matrices).
+                       4. Download the converted matrix as a CSV file using the **Download** button.
+                       5. Use the downloaded matrix as input for the Epigenome Dimension Reduction or Integration modules.
+
+                       **Key outputs:** Converted binary accessibility matrix (`.level` format), downloadable CSV.
+
+                       > **⚠️ Note:** Epigenetic data is inherently sparse. Always use KNN imputation before dimension reduction or differential analysis to reduce dropout artifacts.
                        ")
                      ),
-
-                     # 4. 多组学整合说明
+                     # 5. Multi-Omics Integration
                      tabPanel(
-                       title = "4. Integration Module", icon = icon("layer-group"),
+                       title = "5. Multi-Omics Integration", icon = icon("layer-group"),
                        br(),
                        markdown("
-                       ### Multi-Omics Integration & Systems Biology
-                       This is the core of scMATE, linking Epigenetics to Transcriptional Output.
+                       ### Multi-Omics Integration and Systems Biology
+                       This is the core of scMATE, linking epigenetic regulation (CpG methylation, GpC accessibility) to transcriptional output. It contains 3 sub-tabs.
 
-                       #### Step 1: Data Integration
-                       1. Select your integration mode (e.g., `RNA + CpG + GpC`).
-                       2. Type in the **Target Group Name** (Must exactly match the metadata across all omics layers).
-                       3. Upload the corresponding matrices and annotation files.
-                       4. Click **Run Integration** to map genomic regions to gene promoters/bodies.
+                       ---
 
-                       #### Step 2: Spatial Topology & Joint Analysis
-                       - **Chromosome Topology:** Select a chromosome to visualize how RNA expression, CpG methylation, and GpC accessibility co-vary across physical Megabase positions.
-                       - **States & Drivers:** Calculates regulatory states (e.g., *Poised*, *Fully Activated*) and a Joint Z-score to rank master transcriptional driver genes.
+                       #### Sub-tab 1: Data Integration
+                       **Purpose:** Align epigenetic signals to gene coordinates and merge with transcriptome data.
 
-                       #### Step 3: Enrichment Analysis
-                       Input your discovered master driver genes into the GO/KEGG pathway engine to uncover the underlying biological mechanisms.
+                       **Steps:**
+                       1. Select your **integration mode** from the dropdown (e.g., `RNA + CpG + GpC`, `RNA + CpG`, `RNA + GpC`).
+                       2. Type in the **Target Group Name** — must exactly match the group label in metadata across all omics layers.
+                       3. Upload the corresponding matrices for each selected omics layer.
+                       4. Upload the gene annotation file mapping genomic regions to gene promoters / bodies.
+                       5. Click **Run Integration** — scMATE uses non-equi joins to map epigenetic regions to gene coordinates.
+                       6. Explore results in three views:
+                          - **Data Table** — Integrated gene-level matrix with all omics layers.
+                          - **Correlations** — Pairwise correlation between RNA expression and epigenetic marks.
+                          - **Matrix Plot** — Heatmap visualization of the integrated matrix.
+
+                       **Key outputs:** Integrated multi-omics matrix, correlation plots, heatmap.
+
+                       ---
+
+                       #### Sub-tab 2: Multi-Omics Data Analysis
+                       **Purpose:** Discover regulatory patterns and identify master driver genes.
+
+                       **Steps:**
+                       1. Configure analysis parameters in the left panel (gene selection, scaling method).
+                       2. **Chromosome Topology:** Select a chromosome to visualize how RNA expression, CpG methylation, and GpC accessibility co-vary across physical Megabase positions.
+                       3. **Ranked Candidate Genes (Heatmap):** View a heatmap of top genes ranked by the Joint Z-score across all omics layers.
+                       4. **Regulatory States:** scMATE classifies genes into regulatory states:
+                          - **Poised** — Low expression, accessible chromatin (primed for activation).
+                          - **Fully Activated** — High expression, accessible chromatin, active methylation pattern.
+                          - **Repressed** — Low expression, inaccessible chromatin.
+                       5. The **Joint Z-score** combines methylation, accessibility, and expression into a single metric to rank master transcriptional driver genes.
+
+                       **Key outputs:** Chromosome topology plots, ranked driver gene heatmap, regulatory state classification, Joint Z-score table.
+
+                       ---
+
+                       #### Sub-tab 3: Enrichment Analysis
+                       **Purpose:** Map discovered driver genes to biological pathways and functional categories.
+
+                       **Steps:**
+                       1. Input your candidate gene list (e.g., master driver genes from the Regulatory States analysis).
+                       2. Select a **reference database**:
+                          - **GO BP** — Gene Ontology Biological Process.
+                          - **GO MF** — Gene Ontology Molecular Function.
+                          - **GO CC** — Gene Ontology Cellular Component.
+                          - **KEGG** — Kyoto Encyclopedia of Genes and Genomes pathways.
+                       3. Set **P-value Cutoff** (default 0.05) and **Q-value Cutoff** (default 0.2).
+                       4. Click **Run Analysis** to perform over-representation enrichment.
+                       5. Explore results in three views:
+                          - **Table** — Interactive table of enriched terms with gene counts and p-values.
+                          - **Dot Plot** — Gene ratio vs significance for top terms.
+                          - **Bar Plot** — Bar chart of top enriched terms by significance.
+                       6. Export results using the **Export Results** button.
+
+                       **Key outputs:** Enrichment result table, dot plot, bar plot, downloadable results.
+
+                       > **💡 Workflow Tip:** Run modules in order — Transcriptome and Epigenome first, then Integration, and finally Enrichment Analysis on the driver genes identified by the Joint Z-score.
                        ")
                      )
                    )
@@ -1650,7 +1922,7 @@ server <- function(input, output, session) {
 
 
   # ----Transcriptome Analysis----
-  # ---- Transcriptome Create Object & QC ----
+  ## ---- Transcriptome Create Object & QC ----
   # 1. 定义响应式变量存储数据
   RNA_values <- reactiveValues(
     is_example = FALSE,
@@ -2494,7 +2766,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Transcriptome Dim Reduction Clustering ----
+  ## ---- Transcriptome Dim Reduction Clustering ----
   # 0. 智能识别数据状态：决定显示 "上传框" 还是 "已连接提示"
   output$dr_data_status_ui <- renderUI({
     if (is.null(RNA_values$sci_object)) {
@@ -2817,7 +3089,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Transcriptome Differential Analysis ----
+  ## ---- Transcriptome Differential Analysis ----
   DEA_values <- reactiveValues(
     markers = NULL,    # 存储差异分析结果
     pseudobulk_counts = NULL,
@@ -3432,7 +3704,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Transcriptome Pseudotime Analysis ----
+  ## ---- Transcriptome Pseudotime Analysis ----
   library(princurve)
   # 0. 智能识别数据状态
   output$pseudo_data_status_ui <- renderUI({
@@ -3685,7 +3957,7 @@ server <- function(input, output, session) {
 
 
   # ---- Epigenome Analysis ----
-  # ---- Epigenome Translation ----
+  ## ---- Epigenome Translation ----
   library(GenomicRanges)
   library(IRanges)
   library(future)
@@ -4347,7 +4619,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Epigenome Dim Reduction ----
+  ## ---- Epigenome Dim Reduction ----
   DR_values <- reactiveValues(
     group_raw = NULL,
     plot_obj = NULL,
@@ -4789,7 +5061,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Epigenome Data DEG ----
+  ## ---- Epigenome Data DEG ----
   Diff_values <- reactiveValues(
     group_raw = NULL,
     result_df = NULL,
@@ -5295,8 +5567,120 @@ server <- function(input, output, session) {
   })
 
 
+  ## ATAC Format Converter ----
+  library(zip)
+  library(Seurat)
+
+  # 1. 创建一个响应式变量，用于存储转换后的稀疏矩阵
+  atac_level_mat <- reactiveVal(NULL)
+
+  # 2. 监听 "Convert Count" 按钮点击事件
+  observeEvent(input$btn_convert_atac, {
+    req(input$atac_h5_file) # 确保文件已上传
+    # 显示加载提示（处理大文件时提升用户体验）
+    showNotification("Reading and converting H5 file. This may take a moment...",
+                     id = "atac_notif", duration = NULL, type = "message")
+    tryCatch({
+      # 读取 10x Genomics H5 文件
+      # Read10X_h5 会自动返回一个稀疏矩阵 (dgCMatrix)
+      counts <- Seurat::Read10X_h5(input$atac_h5_file$datapath)
+      # 如果 H5 包含多组学数据，Read10X_h5 会返回一个 list，我们需要提取 Peaks 矩阵
+      if (is.list(counts)) {
+        if ("Peaks" %in% names(counts)) {
+          counts <- counts[["Peaks"]]
+        } else {
+          counts <- counts[[1]] # 默认取第一个
+        }
+      }
+      # 核心逻辑 1：极速二值化 (Binarization)
+      # 因为是稀疏矩阵，0 是不存储的。我们只需要把所有非 0 的值（Tn5结合数）强制改为 1 即可
+      # 这种做法比 counts[counts > 0] <- 1 快成百上千倍，且不增加内存
+      counts@x[counts@x > 0] <- 1
+      # 核心逻辑 2：修改细胞条形码后缀，添加 .level
+      colnames(counts) <- paste0(colnames(counts), ".level")
+      # 将处理好的矩阵存入 reactiveVal
+      atac_level_mat(counts)
+      # 更新提示状态
+      showNotification("Conversion successful!", id = "atac_notif", type = "message")
+    }, error = function(e) {
+      showNotification(paste("Error:", e$message), id = "atac_notif", type = "error")
+    })
+  })
+
+  # 新增：监听 "Reset" 按钮
+  observeEvent(input$btn_reset_atac, {
+    # 1. 清空响应式数据（这会自动清空右侧的表格和下载按钮）
+    atac_level_mat(NULL)
+    # 2. 使用 shinyjs 清空左侧的文件上传框
+    shinyjs::reset("atac_h5_file")
+    # 3. 提示用户已重置
+    showNotification("Data and inputs have been reset.", type = "warning", duration = 3)
+  })
+
+  # 3. 渲染预览表格 (Preview)
+  output$atac_level_preview <- DT::renderDT({
+    req(atac_level_mat())
+    mat <- atac_level_mat()
+    # 【安全机制】：为了防止浏览器崩溃，我们只截取前 50 行和前 10 列进行预览展示
+    n_rows <- min(nrow(mat), 50)
+    n_cols <- min(ncol(mat), 10)
+    # 将截取的小块稀疏矩阵转为普通数据框
+    preview_df <- as.data.frame(as.matrix(mat[1:n_rows, 1:n_cols]))
+    # 将行名 (chr:start-end) 提取为第一列 "region_id"
+    preview_df <- cbind(region_id = rownames(preview_df), preview_df)
+    rownames(preview_df) <- NULL
+    DT::datatable(
+      preview_df,
+      options = list(
+        scrollX = TRUE,
+        pageLength = 10,
+        dom = 't' # 预览模式下隐藏搜索框，保持界面整洁
+      ),
+      rownames = FALSE
+    )
+  })
+
+  # 新增：动态渲染下载按钮
+  output$atac_download_ui <- renderUI({
+    req(atac_level_mat()) # 只有当矩阵存在时，才显示下载按钮
+    downloadButton(
+      "download_atac_csv",
+      "Download CSV Matrix",
+      icon = icon("download"),
+      class = "btn-primary",
+      width = "100%"
+    )
+  })
+
+  # 4. 处理 CSV 下载
+  output$download_atac_csv <- downloadHandler(
+    filename = function() {
+      paste0("ATAC_level_matrix_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
+    },
+    content = function(file) {
+      req(atac_level_mat())
+      mat <- atac_level_mat()
+      showNotification("Preparing CSV for download. This may take a while...",
+                       id = "dl_notif", duration = NULL, type = "warning")
+      tryCatch({
+        # 将稀疏矩阵转为密集矩阵，再转为 data.frame
+        # 注意：如果细胞数和Peak数极大（如 10万Peak x 5万细胞），转为密集矩阵会消耗大量内存
+        df <- as.data.frame(as.matrix(mat))
+        # 添加 region_id 列
+        df <- cbind(region_id = rownames(df), df)
+        # 使用 data.table::fwrite 极速写入 CSV
+        data.table::fwrite(df, file, row.names = FALSE)
+        removeNotification("dl_notif")
+      }, error = function(e) {
+        removeNotification("dl_notif")
+        stop(paste("Failed to write CSV:", e$message))
+      })
+    }
+  )
+
+
   # ----Integration Analysis----
-  # ---- Integration Analysis Server Logic ----
+  ## ---- Integration Analysis Server Logic ----
   Integ_values <- reactiveValues(
     meta_file_path = NULL,
     sheets = NULL,
@@ -5938,7 +6322,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Multi-omics Data Analysis (Fixed) ----
+  ## ---- Multi-omics Data Analysis (Fixed) ----
   Multi_values <- reactiveValues(
     raw_data = NULL,
     topo_plot = NULL,
@@ -7074,7 +7458,7 @@ server <- function(input, output, session) {
   })
 
 
-  # ---- Enrichment Analysis Logic (Fixed) ----
+  ## ---- Enrichment Analysis Logic (Fixed) ----
   library(clusterProfiler)
   library(org.Mm.eg.db)
   library(org.Hs.eg.db)
