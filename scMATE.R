@@ -1332,64 +1332,6 @@ ui <- shinydashboardPlus::dashboardPage(
                        uiOutput("ui_topo_gene_select"), # 【新增】基因选择框
                        actionButton("btn_run_topo", " Map Topology", icon = icon("project-diagram"), class = "btn-info btn-block", style = "font-weight: bold; margin-bottom: 15px;"),
                        hr(),
-                       h4(
-                         icon("fire"),
-                         " Regulatory States & Candidate Ranking",
-                         style = "color: #E64B35; font-weight: bold;"
-                       ),
-                       p(
-                         "First assign regulatory states using robust Z-score projections, then rank candidate genes/loci using DMCS.",
-                         style = "color: #888; font-size: 12px;"
-                       ),
-                       h5(
-                         icon("sliders-h"),
-                         " Regulatory State Parameters",
-                         style = "color: #3C5488; font-weight: bold;"
-                       ),
-                       fluidRow(
-                         column(
-                           width = 12,
-                           sliderInput(
-                             inputId = "state_min_cos",
-                             label = "Minimum cosine",
-                             min = 0.30,
-                             max = 0.95,
-                             value = 0.60,
-                             step = 0.05
-                           )
-                         ),
-                         column(
-                           width = 12,
-                           sliderInput(
-                             inputId = "state_min_norm",
-                             label = "Minimum Z magnitude",
-                             min = 0.00,
-                             max = 3.00,
-                             value = 0.80,
-                             step = 0.10
-                           )
-                         ),
-                         column(
-                           width = 12,
-                           sliderInput(
-                             inputId = "state_label_cut",
-                             label = "Minimum label fraction",
-                             min = 0.00,
-                             max = 0.20,
-                             value = 0.03,
-                             step = 0.01
-                           )
-                         )
-                       ),
-                       actionButton(
-                         "btn_run_states",
-                         " Generate Regulatory States Pie",
-                         icon = icon("chart-pie"),
-                         class = "btn-info btn-block",
-                         style = "font-weight: bold; margin-bottom: 15px;"
-                       ),
-
-                       hr(),
                        h5(
                          icon("th"),
                          " Candidate Ranking & Heatmap",
@@ -1446,6 +1388,63 @@ ui <- shinydashboardPlus::dashboardPage(
                          icon = icon("th"),
                          class = "btn-info btn-block",
                          style = "font-weight: bold;"
+                       ),
+                       hr(),
+                       h4(
+                         icon("fire"),
+                         " Regulatory States & Candidate Ranking",
+                         style = "color: #E64B35; font-weight: bold;"
+                       ),
+                       p(
+                         "First assign regulatory states using robust Z-score projections, then rank candidate genes/loci using DMCS.",
+                         style = "color: #888; font-size: 12px;"
+                       ),
+                       h5(
+                         icon("sliders-h"),
+                         " Regulatory State Parameters",
+                         style = "color: #3C5488; font-weight: bold;"
+                       ),
+                       fluidRow(
+                         column(
+                           width = 12,
+                           sliderInput(
+                             inputId = "state_min_cos",
+                             label = "Minimum cosine",
+                             min = 0.30,
+                             max = 0.95,
+                             value = 0.60,
+                             step = 0.05
+                           )
+                         ),
+                         column(
+                           width = 12,
+                           sliderInput(
+                             inputId = "state_min_norm",
+                             label = "Minimum Z magnitude",
+                             min = 0.00,
+                             max = 3.00,
+                             value = 0.80,
+                             step = 0.10
+                           )
+                         ),
+                         column(
+                           width = 12,
+                           sliderInput(
+                             inputId = "state_label_cut",
+                             label = "Minimum label fraction",
+                             min = 0.00,
+                             max = 0.20,
+                             value = 0.03,
+                             step = 0.01
+                           )
+                         )
+                       ),
+                       actionButton(
+                         "btn_run_states",
+                         " Generate Regulatory States Pie",
+                         icon = icon("chart-pie"),
+                         class = "btn-info btn-block",
+                         style = "font-weight: bold; margin-bottom: 15px;"
                        )
                      )
               ),
