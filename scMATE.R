@@ -6434,12 +6434,12 @@ server <- function(input, output, session) {
   }
 
   empirical_signature_p <- function(z_mat, signatures, observed,
-                                    selected_signature, B = 0, seed = 123) {
+                                    selected_signature, B = 0) {
     B <- as.integer(B)
     if (!is.finite(B) || B <= 0) {
       return(rep(NA_real_, length(observed)))
     }
-    set.seed(seed)
+    # set.seed(seed)
     z_mat <- as.matrix(z_mat)
     n <- nrow(z_mat)
     null_scores <- vector("list", B)
@@ -7244,21 +7244,20 @@ server <- function(input, output, session) {
         TRUE ~ "weak or single-layer dominated signal"
       )
       # Optional empirical P/FDR by modality permutation
-      B_perm <- if (is.null(input$dmcs_perm_n)) 0 else input$dmcs_perm_n
-      p_emp <- empirical_signature_p(
-        z_mat = z_rank_mat,
-        signatures = signatures,
-        observed = df_clean$DMCS,
-        selected_signature = selected_signature,
-        B = B_perm,
-        seed = 123
-      )
-      df_clean$DMCS_empirical_P <- p_emp
-      df_clean$DMCS_empirical_FDR <- if (all(is.na(p_emp))) {
-        NA_real_
-      } else {
-        stats::p.adjust(p_emp, method = "BH")
-      }
+      # B_perm <- if (is.null(input$dmcs_perm_n)) 0 else input$dmcs_perm_n
+      # p_emp <- empirical_signature_p(
+      #   z_mat = z_rank_mat,
+      #   signatures = signatures,
+      #   observed = df_clean$DMCS,
+      #   selected_signature = selected_signature,
+      #   B = B_perm
+      # )
+      # df_clean$DMCS_empirical_P <- p_emp
+      # df_clean$DMCS_empirical_FDR <- if (all(is.na(p_emp))) {
+      #   NA_real_
+      # } else {
+      #   stats::p.adjust(p_emp, method = "BH")
+      # }
       # Ranking metric
       rank_metric <- input$multi_rank_metric
       if (is.null(rank_metric)) {
