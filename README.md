@@ -1,4 +1,4 @@
-# 🧬 scMATE Workflow Platform
+# 🧬 scMATE: Single-Cell Multi-omics Analysis Explorer
 **An Interactive Framework for Single-Cell Transcriptome and Epigenome Integration**
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -28,33 +28,46 @@ scMATE consists of three deeply integrated, highly interactive modules:
 
 ### 🔬 Module 1: Transcriptome Pipeline
 
-- **Data Import:** Upload raw count matrices (`featureCounts` or `CellRanger` outputs).
-- **QC & Normalization:** Filter low-quality cells/genes, and normalize via `LogNormalize`, `LogCPM`, or `TPM`.
-- **Manifold Learning:** Identify Highly Variable Genes (HVG) and run fast PCA, t-SNE, or UMAP (`uwot`).
-- **DEA:** Compute DEGs using fast sparse-matrix Wilcoxon tests and visualize via interactive Volcano plots.
+| Sub-module                   |                         Description                          |
+| ---------------------------- | :----------------------------------------------------------: |
+| **Object Creation & QC**     | Import count matrices (CSV/TSV/H5), matrix-level pre-filtering, mitochondrial & feature filtering, QC violin plots |
+| **Normalization**            | LogNormalize, LogCPM, and TPM (with gene length) normalization; sparse matrix storage |
+| **Dimensionality Reduction** |       High-performance PCA, t-SNE, and UMAP embeddings       |
+| **Clustering**               | Graph-based Leiden community detection on k-NN graph, or hierarchical clustering (Ward.D2) |
+| **Differential Expression**  | Exploratory cell-level Wilcoxon rank-sum test, or replicate-aware pseudobulk analysis via edgeR (TMM normalization, NB GLM, QL F-test, BH FDR) |
+| **Pseudotime Analysis**      | Principal-curve-based or graph-based shortest-path trajectory inference from a user-defined root cluster |
 
 ### 🩸 Module 2: Epigenome Pipeline
 
-- **Matrix Assembly:** Upload Region Annotations (`.csv`) and Single-cell methylation `.cov.gz` files. Automatically strips suffixes and aligns metadata.
-- **Smart Imputation:** Handles extreme sparsity in single-cell epigenomes via Row-Mean or KNN imputation.
-- **Global Landscape:** Visualizes dynamic epigenetic shifts across developmental stages using Joyplots (Ridge plots).
-- **Differential Calling:** Identifies Differentially Methylated Regions (DMRs) using rigorous statistical models.
+| Sub-module                       |                         Description                          |
+| -------------------------------- | :----------------------------------------------------------: |
+| **Matrix Assembly & QC**         | Batch import `.cov` files, BED region annotation, ultra-fast non-equi join for methylation/accessibility quantification, missing-rate filtering |
+| **Imputation**                   | Optional k-NN or mean-based imputation (applied only before dimensionality reduction; raw matrices preserved for QC and differential analysis) |
+| **Epigenetic Landscape**         | Interactive ridge density plots for global and localized methylation/accessibility distributions |
+| **Dimensionality Reduction**     |         PCA, UMAP, MDS, and NMF on imputed matrices          |
+| **Differential Region Analysis** | Dual-testing framework (Fisher's exact test on aggregated counts + Welch's t-test fallback); reports mean difference, Hedges' g, odds ratio, log2 odds ratio; BH FDR correction; identifies DMRs and DARs |
+| **scATAC-seq Converter**         | Optional adapter for 10x Genomics scATAC-seq H5/HDF5 peak matrices (binarization to level matrix format) |
 
 ### 🧩 Module 3: Multi-Omics Integration & Systems Biology
 
-- **Target Group Linking:** Define a global target group (e.g., `E4.5` or `Tumor`) to synchronize metadata across RNA and Epigenome datasets.
-- **Threshold Filtering:** Apply strict `P-value` and `Log2FC` filters on DEGs/DMRs before integration to eliminate background noise.
-- **Regulatory States Inference:** Automatically classifies genes into biological states (e.g., *Fully Silenced*, *Paradox Active*, *Poised*) based on Multi-Omics logic.
-- **Multi-omics Driver Discovery:** Computes Joint Z-scores to identify master regulatory drivers, visualized through clustered heatmaps.
+| Sub-module                          |                         Description                          |
+| ----------------------------------- | :----------------------------------------------------------: |
+| **Data Integration**                | High-fidelity coordinate-to-gene mapping; exact inner joins across modalities; supports four configurations: RNA+CpG+GpC, RNA+CpG, RNA+GpC, CpG+GpC |
+| **Cross-Modality Correlation**      | Pairwise Spearman/Pearson association analysis between RNA, CpG, and GpC signals |
+| **Chromosome Topology**             | LOESS-smoothed multi-omic signal visualization along chromosomal coordinates (midpoint in Mb) |
+| **Regulatory State Classification** | Median-based descriptive state labeling + vector projection/cosine similarity approach (e.g., "Canonical active", "Primed/poised", "Expressed but closed") |
+| **Multi-Omic Gene Ranking**         | Robust Z-score (MAD-based) transformation with clipping at ±3; composite DMCS score combining modalities; ranked gene heatmaps |
+| **Functional Enrichment**           | GO and KEGG over-representation analysis with adaptive ID conversion, FDR correction, and dot/bar plot visualization |
 
 ## 💻 System Requirements
 
 | Requirement            | Specification                                                |
 | :--------------------- | :----------------------------------------------------------- |
+| **CPU**                | Multi-core processor (≥ 4 cores recommended; up to 16 threads supported) |
 | **Operating System**   | Windows or Linux                                             |
 | **Software**           | R (version ≥ 4.2.0)                                          |
 | **Hardware (Basic)**   | Minimum 8 GB RAM                                             |
-| **Hardware (Optimal)** | 16 GB+ RAM & Multi-core processors (for datasets > 400 cells & > 20000 Genes) |
+| **Hardware (Optimal)** | ≥ 32 GB recommended for large datasets                       |
 
 ## ⚙️ Installation
 
@@ -66,25 +79,24 @@ git clone https://github.com/Medinfo-lab/scMATE.git
 cd scMATE
 ```
 
-### 2. Install Required R Packages
+### 2. Install dependencies
 
 Run the following script in your R console to automatically install all dependencies:
 
 ```R
-# Install CRAN packages
-install.packages(c("shiny", "dplyr", "ggplot2", "shinyjs", "Matrix", 
-                   "shinydashboard", "data.table", "DT", "shinydashboardPlus", 
-                   "plotly", "patchwork", "writexl", "shinycssloaders", 
-                   "tidyr", "ggpubr", "GGally", "readxl", "stringr", 
-                   "ggrepel", "ggridges", "tictoc", "future", 
-                   "future.apply", "progressr", "rhdf5"))
+# Core Shiny packages
+install.packages(c("shiny", "shinydashboard", "shinydashboardPlus", "shinyjs",
+                   "shinycssloaders", "progressr", "DT", "dplyr", "markdown"))
 
-# Install Bioconductor packages
+# Data processing & visualization
+install.packages(c("ggplot2", "Matrix", "data.table", "plotly", "patchwork",
+                   "writexl", "tidyr", "ggridges", "ggrepel", "ggpubr",
+                   "readxl", "stringr", "igraph", "FNN", "tictoc"))
+
+# Bioconductor packages
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-
-BiocManager::install(c("clusterProfiler", "org.Mm.eg.db", "org.Hs.eg.db", 
-                       "GenomicRanges", "IRanges", "impute", "mixOmics"))
+BiocManager::install(c("rhdf5", "edgeR"))
 ```
 
 ### 3. Usage
@@ -92,7 +104,14 @@ BiocManager::install(c("clusterProfiler", "org.Mm.eg.db", "org.Hs.eg.db",
 To launch the scMATE application locally, set your working directory to the cloned repository folder and run the following command in the R console:
 
 ```R
-library(shiny)
-runApp("path/to/scMATE") # Replace with the actual folder path
+# Option 1: Run from source
+shiny::runApp("path/to/scMATE")
+
+# Option 2: In RStudio, open app.R and click "Run App"
 ```
 
+## Team
+
+**Medinfo-Lab**  
+School of Medicine, Hebei University of Engineering  
+Hebei Key Laboratory of Medical Data Science
