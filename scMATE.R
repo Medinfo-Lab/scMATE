@@ -7,7 +7,7 @@ library(progressr)
 library(DT)
 library(dplyr)
 library(markdown)
-
+library(htmlwidgets)
 
 
 
@@ -1499,8 +1499,16 @@ ui <- shinydashboardPlus::dashboardPage(
                        selectInput("enrich_db", "Database", choices = c("GO BP" = "BP", "GO MF" = "MF", "GO CC" = "CC", "KEGG" = "KEGG")),
                        splitLayout(numericInput("enrich_pval", "P-val Cut", 0.05), numericInput("enrich_qval", "Q-val Cut", 0.2)),
                        br(),
-                       actionButton("run_enrichment", "Run Analysis", icon = icon("flask"), class = "btn-info btn-lg",
-                                    style = "width: 100%; font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);")
+                       fluidRow(
+                         column(width = 6,
+                                actionButton("run_enrichment", "Run Analysis", icon = icon("flask"), class = "btn-info btn-lg",
+                                             style = "width: 100%; font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);")
+                         ),
+                         column(width = 6,
+                                actionButton("reset_enrich", "Reset", icon = icon("undo"), class = "btn-warning btn-lg",
+                                             style = "width: 100%; font-weight: bold; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);")
+                         )
+                       )
                      )
               ),
               column(width = 9,
@@ -7629,6 +7637,24 @@ server <- function(input, output, session) {
       data.table::fwrite(Enrich_values$res_df, file, row.names = FALSE)
     }
   )
+
+  # Reset Button Logic for Enrichment Analysis
+  observeEvent(input$reset_enrich, {
+    # 1. 使用 shinyjs 重置文件输入框 (这是最关键的一步)
+    #    这会自动清除文件名，并触发依赖它的UI（如基因列选择器）消失
+    shinyjs::reset("enrich_file_input")
+    # 2. 重置其他输入控件到它们的默认值
+    updateSelectInput(session, "enrich_species", selected = "mouse")
+    updateSelectInput(session, "enrich_db", selected = "BP")
+    updateNumericInput(session, "enrich_pval", value = 0.05)
+    updateNumericInput(session, "enrich_qval", value = 0.2)
+    # 3. 清空存储在 reactiveValues 中的结果
+    #    这将自动导致表格和绘图消失，因为它们的 render* 函数依赖于 req(Enrich_values$res_obj)
+    Enrich_values$res_obj <- NULL
+    Enrich_values$res_df <- NULL
+    # 4. (可选) 给用户一个友好的提示
+    showNotification("Inputs and results have been cleared.", type = "message")
+  })
 
 
 }
