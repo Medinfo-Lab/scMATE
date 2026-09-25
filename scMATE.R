@@ -2320,7 +2320,7 @@ server <- function(input, output, session) {
           list(width = '35%', targets = 1, className = 'dt-center') # 右侧数字居中对齐
         ),
         # 核心改动 2：通过 JS 注入极具高级感的 CSS 样式 (拉高行距，增大字号)
-        initComplete = JS(
+        initComplete = htmlwidgets::JS(
           "function(settings, json) {",
           # 美化表头
           "$(this.api().table().header()).css({
@@ -6376,7 +6376,6 @@ server <- function(input, output, session) {
     )
   }
 
-
   make_signature_library <- function(available_z_cols) {
     raw_lib <- list(
       Canonical_active = c(
@@ -7655,7 +7654,6 @@ server <- function(input, output, session) {
     # 4. (可选) 给用户一个友好的提示
     showNotification("Inputs and results have been cleared.", type = "message")
   })
-
 
 }
 
